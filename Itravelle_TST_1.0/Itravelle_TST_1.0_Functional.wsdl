@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--Created with WSDLGenerator 2.0.0 by Amadeus SAS-->
+<!--  Amadeus Proprietary and Confidential Information: unauthorized use and disclosure strictly forbidden. 2015 - Amadeus s.a.s - All Rights Reserved.  -->
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:amasec="http://xml.amadeus.com/2010/06/Security_v1" xmlns:awsl="http://wsdl.amadeus.com/2010/06/ws/Link_v1" xmlns:awsse="http://xml.amadeus.com/2010/06/Session_v3" xmlns:hotel_completereservationdetails_17_1="http://xml.amadeus.com/HCRDRQ_17_1_1A" xmlns:hotel_completereservationdetailsreply_17_1="http://xml.amadeus.com/HCRDRR_17_1_1A" xmlns:hotel_sell_20_1="http://xml.amadeus.com/HBKRCQ_20_1_1A" xmlns:hotel_sellreply_20_1="http://xml.amadeus.com/HBKRCR_20_1_1A" xmlns:pnr_addmultielements_21_1="http://xml.amadeus.com/PNRADD_21_1_1A" xmlns:pnr_cancel_21_1="http://xml.amadeus.com/PNRXCL_21_1_1A" xmlns:pnr_list_0_1="http://xml.amadeus.com/TNLRES_00_1_1A" xmlns:pnr_reply_21_1="http://xml.amadeus.com/PNRACC_21_1_1A" xmlns:pnr_retrieve_21_1="http://xml.amadeus.com/PNRRET_21_1_1A" xmlns:security_signout_4_1="http://xml.amadeus.com/VLSSOQ_04_1_1A" xmlns:security_signoutreply_4_1="http://xml.amadeus.com/VLSSOR_04_1_1A" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://xml.amadeus.com/Itravelle_PDT_1_0" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xml.amadeus.com/Itravelle_PDT_1_0">
+  <wsdl:types>
+    <xs:schema>
+      <xs:import schemaLocation="Hotel_CompleteReservationDetails_17_1_1A.xsd" namespace="http://xml.amadeus.com/HCRDRQ_17_1_1A" />
+      <xs:import schemaLocation="Hotel_CompleteReservationDetailsReply_17_1_1A.xsd" namespace="http://xml.amadeus.com/HCRDRR_17_1_1A" />
+      <xs:import schemaLocation="Hotel_Sell_20_1_1A.xsd" namespace="http://xml.amadeus.com/HBKRCQ_20_1_1A" />
+      <xs:import schemaLocation="Hotel_SellReply_20_1_1A.xsd" namespace="http://xml.amadeus.com/HBKRCR_20_1_1A" />
+      <xs:import schemaLocation="PNR_AddMultiElements_21_1_1A.xsd" namespace="http://xml.amadeus.com/PNRADD_21_1_1A" />
+      <xs:import schemaLocation="PNR_Reply_21_1_1A.xsd" namespace="http://xml.amadeus.com/PNRACC_21_1_1A" />
+      <xs:import schemaLocation="PNR_Cancel_21_1_1A.xsd" namespace="http://xml.amadeus.com/PNRXCL_21_1_1A" />
+      <xs:import schemaLocation="PNR_Retrieve_21_1_1A.xsd" namespace="http://xml.amadeus.com/PNRRET_21_1_1A" />
+      <xs:import schemaLocation="PNR_List_00_1_1A.xsd" namespace="http://xml.amadeus.com/TNLRES_00_1_1A" />
+      <xs:import schemaLocation="Security_SignOut_04_1_1A.xsd" namespace="http://xml.amadeus.com/VLSSOQ_04_1_1A" />
+      <xs:import schemaLocation="Security_SignOutReply_04_1_1A.xsd" namespace="http://xml.amadeus.com/VLSSOR_04_1_1A" />
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="Hotel_CompleteReservationDetails_17_1">
+    <wsdl:part name="Hotel_CompleteReservationDetails_17_1" element="hotel_completereservationdetails_17_1:Hotel_CompleteReservationDetails" />
+  </wsdl:message>
+  <wsdl:message name="Hotel_CompleteReservationDetailsReply_17_1">
+    <wsdl:part name="Hotel_CompleteReservationDetailsReply_17_1" element="hotel_completereservationdetailsreply_17_1:Hotel_CompleteReservationDetailsReply" />
+  </wsdl:message>
+  <wsdl:message name="Hotel_Sell_20_1">
+    <wsdl:part name="Hotel_Sell_20_1" element="hotel_sell_20_1:Hotel_Sell" />
+  </wsdl:message>
+  <wsdl:message name="Hotel_SellReply_20_1">
+    <wsdl:part name="Hotel_SellReply_20_1" element="hotel_sellreply_20_1:Hotel_SellReply" />
+  </wsdl:message>
+  <wsdl:message name="PNR_AddMultiElements_21_1">
+    <wsdl:part name="PNR_AddMultiElements_21_1" element="pnr_addmultielements_21_1:PNR_AddMultiElements" />
+  </wsdl:message>
+  <wsdl:message name="PNR_Reply_21_1">
+    <wsdl:part name="PNR_Reply_21_1" element="pnr_reply_21_1:PNR_Reply" />
+  </wsdl:message>
+  <wsdl:message name="PNR_Cancel_21_1">
+    <wsdl:part name="PNR_Cancel_21_1" element="pnr_cancel_21_1:PNR_Cancel" />
+  </wsdl:message>
+  <wsdl:message name="PNR_Retrieve_21_1">
+    <wsdl:part name="PNR_Retrieve_21_1" element="pnr_retrieve_21_1:PNR_Retrieve" />
+  </wsdl:message>
+  <wsdl:message name="PNR_List_0_1">
+    <wsdl:part name="PNR_List_0_1" element="pnr_list_0_1:PNR_List" />
+  </wsdl:message>
+  <wsdl:message name="Security_SignOut_4_1">
+    <wsdl:part name="Security_SignOut_4_1" element="security_signout_4_1:Security_SignOut" />
+  </wsdl:message>
+  <wsdl:message name="Security_SignOutReply_4_1">
+    <wsdl:part name="Security_SignOutReply_4_1" element="security_signoutreply_4_1:Security_SignOutReply" />
+  </wsdl:message>
+  <wsdl:portType name="Itravelle_PDT_1_0_ServicesPT">
+    <wsdl:operation name="Hotel_CompleteReservationDetails">
+      <wsdl:input message="tns:Hotel_CompleteReservationDetails_17_1" />
+      <wsdl:output message="tns:Hotel_CompleteReservationDetailsReply_17_1" />
+    </wsdl:operation>
+    <wsdl:operation name="Hotel_Sell">
+      <wsdl:input message="tns:Hotel_Sell_20_1" />
+      <wsdl:output message="tns:Hotel_SellReply_20_1" />
+    </wsdl:operation>
+    <wsdl:operation name="PNR_AddMultiElements">
+      <wsdl:input message="tns:PNR_AddMultiElements_21_1" />
+      <wsdl:output message="tns:PNR_Reply_21_1" />
+    </wsdl:operation>
+    <wsdl:operation name="PNR_Cancel">
+      <wsdl:input message="tns:PNR_Cancel_21_1" />
+      <wsdl:output message="tns:PNR_Reply_21_1" />
+    </wsdl:operation>
+    <wsdl:operation name="PNR_Retrieve">
+      <wsdl:input message="tns:PNR_Retrieve_21_1" />
+      <wsdl:output message="tns:PNR_Reply_21_1" />
+    </wsdl:operation>
+    <wsdl:operation name="PNR_Retrieve2">
+      <wsdl:input message="tns:PNR_Retrieve_21_1" />
+      <wsdl:output message="tns:PNR_List_0_1" />
+    </wsdl:operation>
+    <wsdl:operation name="Security_SignOut">
+      <wsdl:input message="tns:Security_SignOut_4_1" />
+      <wsdl:output message="tns:Security_SignOutReply_4_1" />
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>
+<!--1F8B08000000000000FF45CD310BC2301086E1BDBFE246455A2EA176B8AD54094205C142E7C3DE1048D2908682FFDEA083E337BCCF672448E26CD700D97AD932FB48A05177359E6B8D30CB12645BF80DAA25D5916AC1DCA713222156F3F33282F9116B825DD256A4D237D86035382B2103C7E8ECEBFB41D0FF071CC6EB742C46FF80C05E086E39F12ECEC90714D24E0896000000-->

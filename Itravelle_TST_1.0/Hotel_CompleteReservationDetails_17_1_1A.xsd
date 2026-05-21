@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xml.amadeus.com/HCRDRQ_17_1_1A" xmlns="http://xml.amadeus.com/HCRDRQ_17_1_1A" elementFormDefault="qualified">
+  <xs:element name="Hotel_CompleteReservationDetails">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Hotel Complete Reservations Details Query
+Hotel Complete Reservations Details Query
+This message is used to retrieve the sales requirements on reverse access.   H for Hotel  C for Complete  R for Reservations  D for Details  R for Read Q for Query</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="retrievalKeyGroup">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">this group regroups the rloc and the tattoo</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="retrievalKey" type="ReservationControlInformationTypeI">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">This segment is used to convey the record locator of the PNR if available.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+              <xs:element name="tattooID" type="ReferenceInfoType">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">the tattoo ID of the sales requirements is reflected in the response.</xs:documentation>
+                </xs:annotation>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="ReferenceInfoType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">To specify an association between references given to travellers, to products, to services</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="referenceDetails" type="ReferencingDetailsTypeI">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">conveys the tattoo of the booking concerned by the action of the message</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ReferencingDetailsTypeI">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">To provide reference identification.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="type" type="AlphaNumericString_Length1To3">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">type of the value : 'S' for PNR segment reference number</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="value" type="AlphaNumericString_Length1To5">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Conveys the PNR tattoo corresponding to the booking</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ReservationControlInformationDetailsTypeI">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">To specify the information required to identify a reservation.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="companyId" minOccurs="0" type="AlphaNumericString_Length1To3">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This data element is used to convey the company which owns the booking: - 1A</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="controlNumber" type="AlphaNumericString_Length1To16">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This data element is used to convey the reservation number (record locator of a PNR, confirmation number...)</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="controlType" type="AlphaNumericString_Length1To1">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This data element is used to indicate the type on reservation control number conveyed in this segment: - P for PNR record Locator - 2 for a confirmation number</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ReservationControlInformationTypeI">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">To specify a reference to a reservation.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="reservation" minOccurs="0" type="ReservationControlInformationDetailsTypeI">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This composite is used to convey the reservation control information</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="AlphaNumericString_Length1To3">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Format limitations: an..3</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+      <xs:maxLength value="3" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="AlphaNumericString_Length1To16">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Format limitations: an..16</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+      <xs:maxLength value="16" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="AlphaNumericString_Length1To1">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Format limitations: an1</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+      <xs:maxLength value="1" />
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="AlphaNumericString_Length1To5">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Format limitations: an..5</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1" />
+      <xs:maxLength value="5" />
+    </xs:restriction>
+  </xs:simpleType>
+</xs:schema>
+<!-- SchemaRules="2010/01"-->
+<!--Created with SchemaBuilder 5.1.0 by Amadeus S.A.S.-->
+<!--"Amadeus Proprietary and Confidential Information: unauthorized use and disclosure strictly forbidden. 2010 - Amadeus s.a.s - All Rights Reserved."-->
+<!--Build Key:
+1F8B080000000000000095534B6FDB300CBEEB5708BBEC30C471BAA14103E8E0D6790C58FA48D25B8040B59844A82C79A25CD42BFADF47D9CEDA0103B65D0C92A2F9F8BE8FF3E9F574956DA6F9EEE65A9CA5A3F120FD3248C77CE6B5920D4F2F26E978929EF3F972F3294D2769CAB265169A0A70A60D585982A0C0EE52A22E36319C3CA3620F12E19ADEB09205886308D564387C2E4D224BA9A0C6A470E5903DD45619C8B517438410B43DE050E902597184E2714DDF528AE06B608553402928ACB3D12B4BB0E4F56F65256D13DB095B1B4381AAF1FA700CE243D6B5E3B7DE555E4390BEE1D22A7EE5EC5E2BAAA1A5E15FEDDEF95206EDEC84D756D6E1E8BCFE018AD7086DBAD2581887B5078EC1EB229886D33F0F5A518D84136C291FF053334C6482D13786AFE21CC85734BD7F02957C600AF6B23661EEAB0897127B69109872F58381357CAFC116702B4371EC5FC05EFE139860DF725E2241AFBB9727F0485B91E5C10095214B1EA843F3CAF644DFAA3684998B4CB67E4B67FB73B4FE52C0B8429A1E72E30E8A68CC27DBC534CBB7A0F45E16213867703BDDEC728D41DA70454C117FC4DC7629FD2344C6376D0EB65CE3F69B3B502D7B6807D1EAC69A8695E00FD083D1DA330D46E1DAF9F00B3E5A1C69AE0C23A6BFC772625D9B5E39F6BF20AA9CB6E11A4247472B36EF5C788750EB470127AC5B21228AF18ED2613AEA6338733E339A6AF78A8D5AD005604E4AA2DE24CA0E452CA50FB1EEBDD5850E4DBF48F0D2A269F549F808C21A877DE54DB61CBE28309AD69024A0D7845E591C4FBD3F1F12CBD5E966BA9A1469A16A2F59DB823DA3093775A8EA307346811731C0D860B0EC60FC885CBFDDC960C03A90C42863EFFA8BEC36DB2D5C00B31B8DCF48D5A5D4562C366B06CF1511B693B8CBA773B159DD4F4F0471E9418AD1F8FC14108BAB55BEBA63159D84C62391DC41DFF1232EC87AD2913471D661235B1845D7378ACC4080EEE4DA697B09B0136D5DE61F12B1CFBCABC137AC9786187D663F01C3B17A0126050000
+-->
+

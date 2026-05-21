@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hotel Search — Powered by Amadeus</title>
+<style>
+  :root {
+    --primary: #005eb8;
+    --primary-dark: #00408a;
+    --accent: #00b2a9;
+    --bg: #f0f4f9;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --sub: #5a6a80;
+    --green: #1a8c5c;
+    --red: #c0392b;
+    --yellow: #e67e22;
+    --border: #dde3ed;
+    --radius: 14px;
+    --shadow: 0 2px 16px rgba(0,60,120,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, var(--accent) 100%);
+    padding: 28px 32px 24px;
+    color: #fff;
+  }
+  header h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.5px; }
+  header p  { font-size: 0.9rem; opacity: 0.82; margin-top: 4px; }
+  .amadeus-badge {
+    display: inline-block; background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35); border-radius: 20px;
+    padding: 3px 12px; font-size: 0.75rem; margin-top: 8px;
+  }
+
+  /* ── Search Form ── */
+  .search-wrap {
+    max-width: 1100px; margin: 0 auto;
+    padding: 28px 20px 0;
+  }
+  .search-card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 24px 28px;
+  }
+  .search-card h2 { font-size: 1.05rem; color: var(--primary); margin-bottom: 18px; }
+  .form-row {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;
+  }
+  .field { display: flex; flex-direction: column; flex: 1; min-width: 130px; }
+  .field label { font-size: 0.78rem; font-weight: 600; color: var(--sub); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .field input, .field select {
+    border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; font-size: 0.95rem; color: var(--text);
+    transition: border 0.2s;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: var(--primary);
+  }
+  .btn-search {
+    background: var(--primary); color: #fff; border: none;
+    border-radius: 8px; padding: 10px 28px; font-size: 1rem;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .btn-search:hover { background: var(--primary-dark); }
+  .btn-search:disabled { background: #aab; cursor: not-allowed; }
+
+  /* ── Results ── */
+  .results-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px 40px; }
+  .results-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+  }
+  .results-header h3 { font-size: 1.1rem; }
+  .count-badge {
+    background: var(--primary); color: #fff;
+    border-radius: 20px; padding: 2px 12px; font-size: 0.8rem; font-weight: 600;
+  }
+
+  /* ── Hotel Card ── */
+  .hotel-grid { display: grid; gap: 18px; }
+  .hotel-card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+    border: 1.5px solid var(--border); transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .hotel-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,60,120,0.15); }
+
+  .hotel-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .hotel-name { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); }
+  .hotel-meta { font-size: 0.82rem; color: var(--sub); margin-top: 4px; }
+  .hotel-meta span { margin-right: 10px; }
+  .avail-badge {
+    font-size: 0.75rem; font-weight: 700; border-radius: 20px;
+    padding: 4px 12px; white-space: nowrap;
+  }
+  .avail-yes { background: #e6f9f1; color: var(--green); border: 1px solid #b2e8d2; }
+  .avail-no  { background: #fdf0ee; color: var(--red);   border: 1px solid #f5c5be; }
+
+  /* ── Offers inside card ── */
+  .offers-wrap { padding: 14px 20px 18px; }
+  .offers-title { font-size: 0.8rem; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .offer-row {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1fr 1fr 1.2fr;
+    gap: 8px; align-items: center;
+    padding: 10px 14px; border-radius: 8px;
+    background: var(--bg); margin-bottom: 8px; cursor: pointer;
+    border: 1.5px solid transparent; transition: border 0.15s, background 0.15s;
+  }
+  .offer-row:hover { border-color: var(--primary); background: #eef4ff; }
+  .offer-room-type { font-weight: 700; font-size: 0.88rem; }
+  .offer-room-desc { font-size: 0.78rem; color: var(--sub); margin-top: 2px; line-height: 1.3; }
+  .offer-price { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); }
+  .offer-per-night { font-size: 0.75rem; color: var(--sub); }
+  .board-pill {
+    font-size: 0.72rem; font-weight: 600; border-radius: 12px;
+    padding: 3px 9px; display: inline-block;
+  }
+  .board-ROOM_ONLY { background: #e8f0fe; color: #1a56c4; }
+  .board-HALF_BOARD { background: #e6f9f1; color: var(--green); }
+  .board-FULL_BOARD { background: #fef9e7; color: #c17f00; }
+  .board-ALL_INCLUSIVE { background: #f0e6ff; color: #6c3fb5; }
+  .board-default { background: #f0f0f0; color: #666; }
+  .refund-pill {
+    font-size: 0.72rem; font-weight: 600; border-radius: 12px;
+    padding: 3px 9px; display: inline-block;
+  }
+  .refund-YES { background: #e6f9f1; color: var(--green); }
+  .refund-NO  { background: #fdf0ee; color: var(--red); }
+  .refund-PARTIAL { background: #fef9e7; color: var(--yellow); }
+
+  /* ── Detail Modal ── */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: var(--radius);
+    max-width: 560px; width: 95%; max-height: 85vh;
+    overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    padding: 28px;
+  }
+  .modal h3 { font-size: 1.1rem; color: var(--primary); margin-bottom: 16px; }
+  .modal-close {
+    float: right; cursor: pointer; font-size: 1.3rem; color: var(--sub);
+    background: none; border: none;
+  }
+  .tax-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 12px; }
+  .tax-table th { text-align: left; color: var(--sub); font-size: 0.75rem; text-transform: uppercase; padding: 6px 8px; border-bottom: 1.5px solid var(--border); }
+  .tax-table td { padding: 7px 8px; border-bottom: 1px solid #f0f0f0; }
+  .inc-yes { color: var(--green); font-weight: 600; }
+  .inc-no  { color: var(--red);   font-weight: 600; }
+  .amenity-tag {
+    display: inline-block; background: #eef4ff; color: var(--primary);
+    border-radius: 8px; padding: 3px 9px; font-size: 0.75rem;
+    margin: 3px; font-weight: 500;
+  }
+  .section-label {
+    font-size: 0.8rem; font-weight: 700; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin: 16px 0 8px;
+  }
+  .desc-text { font-size: 0.88rem; color: var(--sub); line-height: 1.5; }
+
+  /* ── Loading / Error ── */
+  .loader-wrap { text-align: center; padding: 60px 20px; }
+  .spinner {
+    width: 42px; height: 42px; border: 4px solid #dde3ed;
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-box {
+    background: #fdf0ee; border: 1.5px solid #f5c5be;
+    border-radius: 10px; padding: 16px 20px; color: var(--red);
+    font-size: 0.92rem; margin-top: 16px;
+  }
+  .no-avail-label { font-size: 0.82rem; color: var(--sub); padding: 12px 0; }
+
+  @media (max-width: 700px) {
+    .offer-row { grid-template-columns: 1fr 1fr; }
+    .form-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏨 Hotel Search</h1>
+  <p>Live availability, pricing & room details</p>
+  <span class="amadeus-badge">Powered by Amadeus GDS</span>
+</header>
+
+<!-- Search Form -->
+<div class="search-wrap">
+  <div class="search-card">
+    <h2>Search Hotels</h2>
+    <div class="form-row">
+      <div class="field">
+        <label>City Code (IATA)</label>
+        <input id="city" type="text" value="DXB" placeholder="e.g. DXB, LON, NYC" maxlength="3"/>
+      </div>
+      <div class="field">
+        <label>Check-in</label>
+        <input id="checkin" type="date"/>
+      </div>
+      <div class="field">
+        <label>Check-out</label>
+        <input id="checkout" type="date"/>
+      </div>
+      <div class="field" style="max-width:90px">
+        <label>Adults</label>
+        <select id="adults">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <button class="btn-search" id="searchBtn" onclick="doSearch()">Search</button>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results-wrap" id="resultsWrap"></div>
+
+<!-- Detail Modal -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <button class="modal-close" onclick="document.getElementById('modalBackdrop').classList.remove('open')">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// Set default dates (today + 35, +37 days)
+const today = new Date();
+const ci = new Date(today); ci.setDate(ci.getDate() + 35);
+const co = new Date(today); co.setDate(co.getDate() + 37);
+document.getElementById("checkin").value  = ci.toISOString().slice(0,10);
+document.getElementById("checkout").value = co.toISOString().slice(0,10);
+
+function doSearch() {
+  const city     = document.getElementById("city").value.trim().toUpperCase();
+  const checkin  = document.getElementById("checkin").value;
+  const checkout = document.getElementById("checkout").value;
+  const adults   = document.getElementById("adults").value;
+  const btn      = document.getElementById("searchBtn");
+
+  if (!city || !checkin || !checkout) return alert("Please fill all fields.");
+
+  btn.disabled = true; btn.textContent = "Searching…";
+  document.getElementById("resultsWrap").innerHTML = `
+    <div class="loader-wrap">
+      <div class="spinner"></div>
+      <p style="color:var(--sub)">Fetching live hotel data from Amadeus…</p>
+    </div>`;
+
+  fetch(`/api/search-hotels?city=${city}&checkin=${checkin}&checkout=${checkout}&adults=${adults}`)
+    .then(r => r.json())
+    .then(data => { btn.disabled = false; btn.textContent = "Search"; renderResults(data, checkin, checkout); })
+    .catch(err => {
+      btn.disabled = false; btn.textContent = "Search";
+      document.getElementById("resultsWrap").innerHTML = `<div class="error-box">Error: ${err}</div>`;
+    });
+}
+
+function renderResults(data, checkin, checkout) {
+  if (data.error) {
+    document.getElementById("resultsWrap").innerHTML = `<div class="error-box">API Error: ${JSON.stringify(data.error)}</div>`;
+    return;
+  }
+  const hotels = data.hotels || [];
+  const avail  = hotels.filter(h => h.available);
+  const wrap   = document.getElementById("resultsWrap");
+
+  if (!hotels.length) {
+    wrap.innerHTML = `<div class="loader-wrap"><p style="color:var(--sub)">${data.message || "No hotels found."}</p></div>`;
+    return;
+  }
+
+  const nights = Math.round((new Date(checkout) - new Date(checkin)) / 86400000);
+
+  let html = `
+    <div class="results-header">
+      <h3>Results</h3>
+      <span class="count-badge">${hotels.length} hotels</span>
+      <span style="font-size:0.82rem;color:var(--sub)">${avail.length} with availability · ${nights} night${nights!==1?'s':''}</span>
+    </div>
+    <div class="hotel-grid">`;
+
+  for (const h of hotels) {
+    const badgeClass = h.available ? "avail-yes" : "avail-no";
+    const badgeText  = h.available ? "✓ Available" : "No availability";
+    const mapUrl     = h.latitude ? `https://maps.google.com/?q=${h.latitude},${h.longitude}` : "#";
+
+    html += `
+    <div class="hotel-card">
+      <div class="hotel-header">
+        <div>
+          <div class="hotel-name">${h.name}</div>
+          <div class="hotel-meta">
+            <span>🏷 ${h.hotelId}</span>
+            <span>🏢 ${h.chainCode || "—"}</span>
+            <span>📍 ${h.address || h.city}${h.country ? ", "+h.country : ""}</span>
+            ${h.latitude ? `<span><a href="${mapUrl}" target="_blank" style="color:var(--primary);font-size:0.78rem">📌 Map</a></span>` : ""}
+          </div>
+        </div>
+        <span class="avail-badge ${badgeClass}">${badgeText}</span>
+      </div>`;
+
+    if (h.available && h.offers.length) {
+      html += `<div class="offers-wrap">
+        <div class="offers-title">Room Offers</div>`;
+
+      for (const o of h.offers) {
+        const refundKey = o.refundable.includes("NON") ? "NO" : o.refundable.includes("DEADLINE") ? "PARTIAL" : "YES";
+        const refundLabel = refundKey === "NO" ? "Non-refundable" : refundKey === "PARTIAL" ? "Refundable (deadline)" : "Refundable";
+        const board = o.boardType || "ROOM_ONLY";
+        const boardLabel = board.replace(/_/g," ");
+
+        html += `
+        <div class="offer-row" onclick="showDetail('${o.offerId}','${h.name}')">
+          <div>
+            <div class="offer-room-type">${o.beds || ""} ${o.bedType || ""} ${o.roomType || ""}</div>
+            <div class="offer-room-desc">${o.description || "—"}</div>
+          </div>
+          <div>
+            <span class="board-pill board-${board} board-default">${boardLabel}</span>
+          </div>
+          <div>
+            <div class="offer-price">${o.currency} ${o.totalPrice || "—"}</div>
+            <div class="offer-per-night">Total (${nights}n)</div>
+          </div>
+          <div>
+            <div class="offer-price" style="font-size:0.95rem">${o.currency} ${o.avgPerNight || "—"}</div>
+            <div class="offer-per-night">per night avg</div>
+          </div>
+          <div>
+            <span class="refund-pill refund-${refundKey}">${refundLabel}</span>
+            <div style="font-size:0.72rem;color:var(--sub);margin-top:4px">${o.paymentType || ""}</div>
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    } else if (!h.available) {
+      html += `<div class="offers-wrap"><p class="no-avail-label">No room availability for selected dates.</p></div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function showDetail(offerId, hotelName) {
+  const content = document.getElementById("modalContent");
+  content.innerHTML = `<div class="spinner" style="margin:30px auto"></div>`;
+  document.getElementById("modalBackdrop").classList.add("open");
+
+  fetch(`/api/offer-detail/${offerId}`)
+    .then(r => r.json())
+    .then(data => {
+      let html = `<h3>🏨 ${hotelName}</h3>`;
+
+      if (data.description) {
+        html += `<div class="section-label">Room Description</div>
+                 <div class="desc-text">${data.description.replace(/\n/g,"<br>")}</div>`;
+      }
+
+      if (data.amenities && data.amenities.length) {
+        html += `<div class="section-label">Amenities</div>`;
+        html += data.amenities.map(a => `<span class="amenity-tag">${a.replace(/_/g," ")}</span>`).join("");
+      }
+
+      if (data.taxes && data.taxes.length) {
+        html += `<div class="section-label">Tax Breakdown</div>
+          <table class="tax-table">
+            <tr><th>Tax Type</th><th>Amount</th><th>Currency</th><th>Included?</th></tr>`;
+        for (const t of data.taxes) {
+          html += `<tr>
+            <td>${(t.code||"MISC").replace(/_/g," ")}</td>
+            <td>${t.amount || "—"}</td>
+            <td>${t.currency || "—"}</td>
+            <td class="${t.included ? "inc-yes":"inc-no"}">${t.included ? "Yes":"Extra"}</td>
+          </tr>`;
+        }
+        html += `</table>`;
+      } else {
+        html += `<div class="section-label">Taxes</div><p style="color:var(--sub);font-size:0.85rem">No tax detail on this rate.</p>`;
+      }
+
+      if (data.address && Object.keys(data.address).length) {
+        const a = data.address;
+        html += `<div class="section-label">Full Address</div>
+          <p style="font-size:0.88rem;color:var(--sub)">${(a.lines||[]).join(", ")} ${a.cityName||""} ${a.stateCode||""} ${a.countryCode||""} ${a.postalCode||""}</p>`;
+      }
+
+      content.innerHTML = html;
+    })
+    .catch(err => {
+      content.innerHTML = `<div class="error-box">Could not load details: ${err}</div>`;
+    });
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById("modalBackdrop")) {
+    document.getElementById("modalBackdrop").classList.remove("open");
+  }
+}
+</script>
+</body>
+</html>
