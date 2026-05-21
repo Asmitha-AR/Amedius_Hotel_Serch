@@ -10,7 +10,8 @@ from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 app = Flask(__name__)
 
@@ -193,6 +194,19 @@ def parse_hotel_images(xml_text, limit=12):
     images = []
     seen = set()
     preferred = {"J": 0, "I": 1, "H": 2, "F": 3, "E": 4, "D": 5, "C": 6, "B": 7, "A": 8}
+
+    def add_image(url, width=0, height=0, category="", dimension=""):
+        if not url or not url.lower().startswith(("http://", "https://")) or url in seen:
+            return
+        seen.add(url)
+        images.append({
+            "url": url,
+            "width": width,
+            "height": height,
+            "category": category,
+            "dimension": dimension,
+        })
+
     for image_item in root.iter():
         if local_name(image_item.tag) != "ImageItem":
             continue
@@ -200,7 +214,7 @@ def parse_hotel_images(xml_text, limit=12):
         for image_format in image_item.iter():
             if local_name(image_format.tag) != "ImageFormat":
                 continue
-            url_node = first_child(image_format, "URL")
+            url_node = first_desc(image_format, "URL")
             url = text_of(url_node)
             if not url or not url.lower().startswith(("http://", "https://")):
                 continue
@@ -217,10 +231,16 @@ def parse_hotel_images(xml_text, limit=12):
             }))
         if candidates:
             candidates.sort(key=lambda item: (item[0], item[1]))
-            image = candidates[0][2]
-            if image["url"] not in seen:
-                seen.add(image["url"])
-                images.append(image)
+            add_image(**candidates[0][2])
+        else:
+            urls = []
+            for url_node in image_item.iter():
+                if local_name(url_node.tag) == "URL":
+                    url = text_of(url_node)
+                    if url and url.lower().startswith(("http://", "https://")):
+                        urls.append(url)
+            if urls:
+                add_image(urls[-1], category=image_item.get("Category", ""))
         if len(images) >= limit:
             break
     return images
@@ -242,6 +262,10 @@ def get_hotel_images(hotel_code):
             timeout=45,
         )
         if response.status_code >= 400:
+            print(
+                f"Hotel image content failed for {hotel_code}: http_status={response.status_code}, fault={parse_soap_fault(response.text) or 'N/A'}",
+                flush=True,
+            )
             _hotel_image_cache[hotel_code] = []
         else:
             _hotel_image_cache[hotel_code] = parse_hotel_images(response.text)
@@ -279,7 +303,7 @@ def call_hotel_availability(city, checkin, checkout, adults, rooms=1):
     print(f"SOAP search succeeded: http_status={response.status_code}", flush=True)
     parsed = parse_hotel_availability_response(response.text, city, checkin, checkout, adults, rooms)
     if not parsed.get("hotels"):
-        dump_path = os.path.join(os.path.dirname(__file__), "last_empty_response.xml")
+        dump_path = os.path.join(BASE_DIR, "last_empty_response.xml")
         with open(dump_path, "w", encoding="utf-8") as f:
             f.write(response.text)
         root = ET.fromstring(response.text) if response.text.strip().startswith("<") else None
@@ -599,4 +623,3 @@ def offer_detail(offer_id):
 
 if __name__ == "__main__":
     app.run(debug=True, port=5050, threaded=True)
-
