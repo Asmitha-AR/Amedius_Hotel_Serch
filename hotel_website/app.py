@@ -374,6 +374,26 @@ def parse_address(address_node):
             lines.append(value)
     return " ".join(lines)
 
+def normalize_coordinate(value, kind):
+    if value in (None, ""):
+        return None
+    raw = str(value).strip()
+    try:
+        number = float(raw)
+    except ValueError:
+        return raw
+    limit = 90 if kind == "lat" else 180
+    if -limit <= number <= limit:
+        return f"{number:.6f}".rstrip("0").rstrip(".")
+
+    sign = -1 if number < 0 else 1
+    compact = abs(number)
+    for scale in (100000, 10000, 1000000):
+        scaled = sign * (compact / scale)
+        if -limit <= scaled <= limit:
+            return f"{scaled:.6f}".rstrip("0").rstrip(".")
+    return raw
+
 def parse_property(prop, city):
     if prop is None:
         return {
@@ -396,8 +416,8 @@ def parse_property(prop, city):
         "name": prop.get("HotelName", ""),
         "chainCode": prop.get("ChainCode", ""),
         "city": prop.get("HotelCityCode", city),
-        "latitude": position.get("Latitude") if position is not None else None,
-        "longitude": position.get("Longitude") if position is not None else None,
+        "latitude": normalize_coordinate(position.get("Latitude"), "lat") if position is not None else None,
+        "longitude": normalize_coordinate(position.get("Longitude"), "lon") if position is not None else None,
         "address": parse_address(address),
         "country": country.get("Code", "") if country is not None else "",
         "available": False,
