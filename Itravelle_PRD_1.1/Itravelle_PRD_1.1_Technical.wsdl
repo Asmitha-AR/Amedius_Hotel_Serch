@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--Created with WSDLGenerator 2.0.0 by Amadeus SAS-->
 <!--  Amadeus Proprietary and Confidential Information: unauthorized use and disclosure strictly forbidden. 2015 - Amadeus s.a.s - All Rights Reserved.  -->
-<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:amasec="http://xml.amadeus.com/2010/06/Security_v1" xmlns:awsl="http://wsdl.amadeus.com/2010/06/ws/Link_v1" xmlns:awsse="http://xml.amadeus.com/2010/06/Session_v3" xmlns:hotel_completereservationdetails_17_1="http://xml.amadeus.com/HCRDRQ_17_1_1A" xmlns:hotel_completereservationdetailsreply_17_1="http://xml.amadeus.com/HCRDRR_17_1_1A" xmlns:hotel_sell_20_1="http://xml.amadeus.com/HBKRCQ_20_1_1A" xmlns:hotel_sellreply_20_1="http://xml.amadeus.com/HBKRCR_20_1_1A" xmlns:int="http://xml.amadeus.com/Itravelle_PDT_1_0" xmlns:pnr_addmultielements_21_1="http://xml.amadeus.com/PNRADD_21_1_1A" xmlns:pnr_cancel_21_1="http://xml.amadeus.com/PNRXCL_21_1_1A" xmlns:pnr_list_0_1="http://xml.amadeus.com/TNLRES_00_1_1A" xmlns:pnr_reply_21_1="http://xml.amadeus.com/PNRACC_21_1_1A" xmlns:pnr_retrieve_21_1="http://xml.amadeus.com/PNRRET_21_1_1A" xmlns:security_signout_4_1="http://xml.amadeus.com/VLSSOQ_04_1_1A" xmlns:security_signoutreply_4_1="http://xml.amadeus.com/VLSSOR_04_1_1A" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://xml.amadeus.com/Itravelle_PDT_1_0" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xml.amadeus.com/Itravelle_PDT_1_0">
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:amasec="http://xml.amadeus.com/2010/06/Security_v1" xmlns:awsl="http://wsdl.amadeus.com/2010/06/ws/Link_v1" xmlns:awsse="http://xml.amadeus.com/2010/06/Session_v3" xmlns:hotel_completereservationdetails_17_1="http://xml.amadeus.com/HCRDRQ_17_1_1A" xmlns:hotel_completereservationdetailsreply_17_1="http://xml.amadeus.com/HCRDRR_17_1_1A" xmlns:hotel_sell_20_1="http://xml.amadeus.com/HBKRCQ_20_1_1A" xmlns:hotel_sellreply_20_1="http://xml.amadeus.com/HBKRCR_20_1_1A" xmlns:int="http://xml.amadeus.com/Itravelle_PRD_1_1" xmlns:pnr_addmultielements_21_1="http://xml.amadeus.com/PNRADD_21_1_1A" xmlns:pnr_cancel_21_1="http://xml.amadeus.com/PNRXCL_21_1_1A" xmlns:pnr_list_0_1="http://xml.amadeus.com/TNLRES_00_1_1A" xmlns:pnr_reply_21_1="http://xml.amadeus.com/PNRACC_21_1_1A" xmlns:pnr_retrieve_21_1="http://xml.amadeus.com/PNRRET_21_1_1A" xmlns:security_signout_4_1="http://xml.amadeus.com/VLSSOQ_04_1_1A" xmlns:security_signoutreply_4_1="http://xml.amadeus.com/VLSSOR_04_1_1A" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://xml.amadeus.com/Itravelle_PRD_1_1" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xml.amadeus.com/Itravelle_PRD_1_1">
   <wsp:Policy wsu:Id="MessagingPolicy">
     <wsam:Addressing wsp:Optional="true">
       <wsp:Policy>
@@ -12,7 +12,7 @@
   <wsp:Policy wsu:Id="AmadeusPolicy">
     <wsp:PolicyReference URI="#MessagingPolicy" />
   </wsp:Policy>
-  <wsdl:import namespace="http://xml.amadeus.com/Itravelle_PDT_1_0" location="Itravelle_TST_1.0_Functional.wsdl" />
+  <wsdl:import namespace="http://xml.amadeus.com/Itravelle_PRD_1_1" location="Itravelle_PRD_1.1_Functional.wsdl" />
   <wsdl:types>
     <xs:schema>
       <xs:import schemaLocation="AMA/2012B/AMA_WS_Session.xsd" namespace="http://xml.amadeus.com/2010/06/Session_v3" />
@@ -29,7 +29,7 @@
   <wsdl:message name="AMA_SecurityHostedUser_1.000">
     <wsdl:part name="security" element="amasec:AMA_SecurityHostedUser" />
   </wsdl:message>
-  <wsdl:binding name="AmadeusWebServicesBinding" type="tns:Itravelle_PDT_1_0_ServicesPT">
+  <wsdl:binding name="AmadeusWebServicesBinding" type="tns:Itravelle_PRD_1_1_ServicesPT">
     <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
     <wsdl:operation name="Hotel_CompleteReservationDetails">
       <soap:operation soapAction="http://webservices.amadeus.com/HCRDRQ_17_1_1A" />
@@ -130,10 +130,10 @@
       </wsdl:output>
     </wsdl:operation>
   </wsdl:binding>
-  <wsdl:service name="Itravelle_PDT_1_0_Services">
+  <wsdl:service name="Itravelle_PRD_1_1_Services">
     <wsdl:port binding="tns:AmadeusWebServicesBinding" name="AmadeusWebServicesPort">
-      <soap:address location="https://nodeD3.test.webservices.amadeus.com/1ASIWLUXLET" />
+      <soap:address location="https://nodeD3.production.webservices.amadeus.com/1ASIWLUXLET" />
     </wsdl:port>
   </wsdl:service>
 </wsdl:definitions>
-<!--1F8B08000000000000FF45CD310BC2301086E1BDBFE246455A2EA176B8AD54094205C142E7C3DE1048D2908682FFDEA083E337BCCF672448E26CD700D97AD932FB48A05177359E6B8D30CB12645BF80DAA25D5916AC1DCA713222156F3F33282F9116B825DD256A4D237D86035382B2103C7E8ECEBFB41D0FF071CC6EB742C46FF80C05E086E39F12ECEC90714D24E0896000000-->
+<!--1F8B08000000000000FF45CD310BC2301086E1BDBFE246455AAE513BDC565482504130E07CE84103495A9258F0DF1B7470FC86F7F9B404899CED14205B2F29B39F0914AAAEC67DAD5A30E32BA627BFA155841D6D77A02F66834888D5FD761C40FF8429C2223115A8E40D36581D9C959081E7D9D9C7F782A0FF0F580D27B32E467F85C05E08CE39F222CEC9078C1B7A8B95000000-->

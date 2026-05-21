@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.opentravel.org/OTA/2003/05" targetNamespace="http://www.opentravel.org/OTA/2003/05" elementFormDefault="qualified" version="6.001" id="OTA2011B">
-  <xs:include schemaLocation="chameleon/OTA_HotelReservation.xsd" />
+  <xs:include schemaLocation="OTA_2011B_Types.xsd" />
   <xs:annotation>
     <xs:documentation xml:lang="en">All Schema files in the OpenTravel Alliance specification are made available according to the terms defined by the OpenTravel License Agreement at http://www.opentravel.org/Specifications/Default.aspx.</xs:documentation>
   </xs:annotation>
@@ -84,7 +84,8 @@
                                       </xs:restriction>
                                     </xs:simpleType>
                                   </xs:attribute>
-                                  <xs:attribute name="Time" type="xs:integer" use="optional">
+                                  <!--Replaced incorrect type "xs:integer"-->
+                                  <xs:attribute name="Time" type="xs:long" use="optional">
                                     <xs:annotation>
                                       <xs:documentation xml:lang="en">Used in conjunction with the RestrictionType and the TimeUnit to define the restriction length.</xs:documentation>
                                     </xs:annotation>
@@ -139,7 +140,8 @@
                                 <xs:documentation xml:lang="en">The code specifying a monetary unit. Use ISO 4217, three alpha code.</xs:documentation>
                               </xs:annotation>
                             </xs:attribute>
-                            <xs:attribute name="Decimal" type="xs:nonNegativeInteger" use="optional">
+                            <!--Replaced incorrect type "xs:nonNegativeInteger"-->
+                            <xs:attribute name="Decimal" type="xs:long" use="optional">
                               <xs:annotation>
                                 <xs:documentation xml:lang="en">Indicates the number of decimal places for a particular currency. This is equivalent to the ISO 4217 standard "minor unit". Typically used when the amount provided includes the minor unit of currency without a decimal point (e.g., USD 8500 needs DecimalPlaces="2" to represent $85).</xs:documentation>
                               </xs:annotation>
@@ -242,7 +244,8 @@
                     <xs:documentation xml:lang="en">A text field used to indicate that there are additional rates that cannot fit in the availability response.  The text returned should be meaningful in identifying where to begin the next block of data and sent in the availability request.</xs:documentation>
                   </xs:annotation>
                 </xs:attribute>
-                <xs:attribute name="SortOrder" type="xs:positiveInteger" use="optional">
+                <!--Replaced incorrect type "xs:positiveInteger"-->
+                <xs:attribute name="SortOrder" type="xs:long" use="optional">
                   <xs:annotation>
                     <xs:documentation xml:lang="en">The specified sort order for the room stay results.</xs:documentation>
                   </xs:annotation>
@@ -295,7 +298,8 @@
                           <xs:documentation xml:lang="en">The code specifying the requested currency  (use ISO 4217, three alpha code).</xs:documentation>
                         </xs:annotation>
                       </xs:attribute>
-                      <xs:attribute name="DecimalPlaces" type="xs:nonNegativeInteger" use="optional">
+                      <!--Replaced incorrect type "xs:nonNegativeInteger"-->
+                      <xs:attribute name="DecimalPlaces" type="xs:long" use="optional">
                         <xs:annotation>
                           <xs:documentation xml:lang="en">Indicates the number of decimal places for the requested currency. This is equivalent to the ISO 4217 standard "minor unit".</xs:documentation>
                         </xs:annotation>
@@ -346,4 +350,3 @@
     </xs:complexType>
   </xs:element>
 </xs:schema>
-
