@@ -341,19 +341,34 @@
   }
 
   .hotel-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
     color: var(--muted);
     font-size: 0.86rem;
     line-height: 1.45;
   }
 
-  .hotel-meta span {
+  .hotel-location {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .hotel-codes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-chip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    min-width: 0;
+    border-radius: 999px;
+    background: #f3f6fb;
+    color: #5b6678;
+    padding: 5px 9px;
+    font-size: 0.74rem;
+    font-weight: 800;
   }
 
   .map-link {
@@ -415,6 +430,13 @@
     font-size: 0.98rem;
     font-weight: 900;
     line-height: 1.25;
+  }
+
+  .offer-code {
+    color: var(--faint);
+    font-size: 0.76rem;
+    font-weight: 850;
+    margin-top: 6px;
   }
 
   .offer-room-desc {
@@ -773,6 +795,47 @@ function fallbackImageFor(hotel) {
   return fallbackImages[stableIndex(key, fallbackImages.length)];
 }
 
+function titleCase(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\b[a-z]/g, char => char.toUpperCase())
+    .replace(/\b(Ae|Uae|Usa|Uk)\b/g, match => match.toUpperCase());
+}
+
+function friendlyAddress(hotel) {
+  const parts = [];
+  if (hotel.address) parts.push(titleCase(hotel.address));
+  if (hotel.country && !String(hotel.address || "").includes(hotel.country)) parts.push(hotel.country);
+  return parts.join(", ") || titleCase(hotel.city || "Location not provided");
+}
+
+function friendlyChain(chainCode) {
+  const chains = {
+    AL: "Accor Live Limitless",
+    EN: "SLS / Ennismore",
+    HL: "Hilton",
+    RD: "Radisson",
+    RT: "Rotana"
+  };
+  return chains[chainCode] || (chainCode ? `Chain ${chainCode}` : "Independent hotel");
+}
+
+function cleanRoomText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\bRO-RO\b/gi, "")
+    .replace(/\bROOM\s*ONLY\b/gi, "")
+    .replace(/\s*[-|]\s*(AED|USD|EUR|GBP)\s*\d[\d.]*$/i, "")
+    .trim();
+}
+
+function roomTitleFor(o) {
+  const description = cleanRoomText(o.description);
+  if (description) return description;
+  return cleanRoomText(`${o.bedType || ""} ${o.roomType || ""}`) || "Selected room";
+}
+
 function doSearch() {
   const city = document.getElementById("city").value.trim().toUpperCase();
   const checkin = document.getElementById("checkin").value;
@@ -840,7 +903,7 @@ function renderResults(data, checkin, checkout) {
   for (const h of hotels) {
     const badgeClass = h.available ? "avail-yes" : "avail-no";
     const badgeText = h.available ? "Available" : "No availability";
-    const location = h.address || h.city || "";
+    const location = friendlyAddress(h);
     const mapUrl = h.latitude ? `https://maps.google.com/?q=${encodeURIComponent(h.latitude)},${encodeURIComponent(h.longitude || "")}` : "";
     const fallbackImage = fallbackImageFor(h);
 
@@ -855,10 +918,14 @@ function renderResults(data, checkin, checkout) {
           <div class="hotel-header">
             <h3 class="hotel-name">${clean(h.name || "Unnamed hotel")}</h3>
             <div class="hotel-meta">
-              <span>${clean(h.hotelId || "No code")}</span>
-              <span>${clean(h.chainCode || "Independent")}</span>
-              <span>${clean(location)}${h.country ? `, ${clean(h.country)}` : ""}</span>
-              ${mapUrl ? `<a class="map-link" href="${attr(mapUrl)}" target="_blank" rel="noreferrer">Map</a>` : ""}
+              <div class="hotel-location">
+                <span>${clean(location)}</span>
+                ${mapUrl ? `<a class="map-link" href="${attr(mapUrl)}" target="_blank" rel="noreferrer">View map</a>` : ""}
+              </div>
+              <div class="hotel-codes">
+                <span class="meta-chip">${clean(friendlyChain(h.chainCode))}</span>
+                ${h.hotelId ? `<span class="meta-chip">Hotel code ${clean(h.hotelId)}</span>` : ""}
+              </div>
             </div>
           </div>`;
 
@@ -872,7 +939,7 @@ function renderResults(data, checkin, checkout) {
             </div>
             <select class="offer-select" id="offer-select-${attr(h.hotelId)}" data-hotel-id="${attr(h.hotelId)}" onchange="updateSelectedOffer(this.dataset.hotelId)">
               ${h.offers.map((o, idx) => {
-                const label = `${o.roomType || "Room"} ${o.description ? "- " + o.description : ""} | ${o.currency} ${o.totalPrice || "?"}`;
+                const label = `${roomTitleFor(o)} | ${o.currency} ${o.totalPrice || "?"}`;
                 return `<option value="${idx}">${clean(label).slice(0, 170)}</option>`;
               }).join("")}
             </select>
@@ -901,7 +968,8 @@ function offerMeta(o) {
 
 function offerSummaryHtml(hotelId, hotelName, o, nights) {
   const meta = offerMeta(o);
-  const roomTitle = `${o.beds || ""} ${o.bedType || ""} ${o.roomType || ""}`.trim() || "Selected room";
+  const roomTitle = roomTitleFor(o);
+  const roomCode = [o.roomType, o.bookingCode].filter(Boolean).join(" / ");
   const totalPrice = `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
   const nightPrice = `${o.currency || ""} ${o.avgPerNight || "?"}`.trim();
 
@@ -909,7 +977,7 @@ function offerSummaryHtml(hotelId, hotelName, o, nights) {
     <div class="offer-row" data-offer-id="${attr(o.offerId)}" data-hotel-name="${attr(hotelName)}" onclick="showDetailFromElement(this)">
       <div>
         <div class="offer-room-type">${clean(roomTitle)}</div>
-        <div class="offer-room-desc">${clean(o.description || "No room description returned for this rate.")}</div>
+        ${roomCode ? `<div class="offer-code">Rate code ${clean(roomCode)}</div>` : ""}
         <div class="chips">
           <span class="chip board-pill">${clean(meta.boardLabel)}</span>
           <span class="chip refund-${meta.refundKey}">${clean(meta.refundLabel)}</span>
