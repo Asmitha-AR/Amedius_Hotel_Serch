@@ -398,15 +398,118 @@
     text-transform: uppercase;
   }
 
-  .offer-select {
+  .rate-picker {
+    position: relative;
+  }
+
+  .rate-trigger {
     width: 100%;
-    min-height: 44px;
+    min-height: 50px;
     border: 1px solid var(--line);
     border-radius: var(--radius);
     background: #fff;
     color: var(--ink);
-    padding: 0 12px;
-    outline: none;
+    padding: 10px 42px 10px 13px;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    gap: 3px;
+    position: relative;
+  }
+
+  .rate-trigger:hover {
+    border-color: #b8c7e6;
+    background: #fbfcff;
+  }
+
+  .rate-trigger::after {
+    content: "";
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: translateY(-65%) rotate(45deg);
+  }
+
+  .rate-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 850;
+  }
+
+  .rate-sub {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 750;
+  }
+
+  .rate-menu {
+    display: none;
+    position: absolute;
+    z-index: 20;
+    inset: calc(100% + 8px) 0 auto 0;
+    max-height: 320px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(23, 32, 51, 0.16);
+    padding: 6px;
+  }
+
+  .rate-picker.open .rate-menu {
+    display: grid;
+    gap: 4px;
+  }
+
+  .rate-option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    padding: 10px;
+    cursor: pointer;
+  }
+
+  .rate-option:hover,
+  .rate-option.is-selected {
+    background: #f1f6ff;
+  }
+
+  .rate-option-title {
+    font-weight: 850;
+    line-height: 1.3;
+  }
+
+  .rate-option-meta {
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 750;
+    margin-top: 3px;
+  }
+
+  .rate-option-price {
+    color: var(--navy);
+    font-weight: 950;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  .rate-option-price small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.72rem;
+    margin-top: 3px;
   }
 
   .offer-row {
@@ -430,13 +533,6 @@
     font-size: 0.98rem;
     font-weight: 900;
     line-height: 1.25;
-  }
-
-  .offer-code {
-    color: var(--faint);
-    font-size: 0.76rem;
-    font-weight: 850;
-    margin-top: 6px;
   }
 
   .offer-room-desc {
@@ -659,6 +755,8 @@
     .hotel-card { grid-template-columns: 1fr; }
     .photo-wrap, .hotel-photo { min-height: 250px; }
     .offer-row { grid-template-columns: 1fr; }
+    .rate-option { grid-template-columns: 1fr; }
+    .rate-option-price { white-space: normal; }
     .price-block { text-align: left; }
     .btn-detail { width: 100%; }
   }
@@ -937,12 +1035,7 @@ function renderResults(data, checkin, checkout) {
               <div class="offers-title">Room offers</div>
               <span class="count-badge">${h.offers.length} rates</span>
             </div>
-            <select class="offer-select" id="offer-select-${attr(h.hotelId)}" data-hotel-id="${attr(h.hotelId)}" onchange="updateSelectedOffer(this.dataset.hotelId)">
-              ${h.offers.map((o, idx) => {
-                const label = `${roomTitleFor(o)} | ${o.currency} ${o.totalPrice || "?"}`;
-                return `<option value="${idx}">${clean(label).slice(0, 170)}</option>`;
-              }).join("")}
-            </select>
+            ${ratePickerHtml(h, selected)}
             <div id="selected-offer-${attr(h.hotelId)}">${offerSummaryHtml(h.hotelId, h.name, selected, nights)}</div>
           </div>`;
     } else if (!h.available) {
@@ -966,18 +1059,50 @@ function offerMeta(o) {
   return { refundKey, refundLabel, board, boardLabel: board.replace(/_/g, " ") };
 }
 
+function offerPriceLabel(o) {
+  return `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
+}
+
+function perNightLabel(o) {
+  return `${o.currency || ""} ${o.avgPerNight || "?"}`.trim();
+}
+
+function ratePickerHtml(hotel, selected) {
+  const selectedMeta = offerMeta(selected);
+  return `
+    <div class="rate-picker" id="rate-picker-${attr(hotel.hotelId)}">
+      <button class="rate-trigger" type="button" data-hotel-id="${attr(hotel.hotelId)}" onclick="toggleRatePicker(event, this.dataset.hotelId)">
+        <span class="rate-title">${clean(roomTitleFor(selected))}</span>
+        <span class="rate-sub">${clean(selectedMeta.boardLabel)} · ${clean(selectedMeta.refundLabel)} · ${clean(offerPriceLabel(selected))} total</span>
+      </button>
+      <div class="rate-menu">
+        ${hotel.offers.map((offer, idx) => rateOptionHtml(hotel.hotelId, offer, idx)).join("")}
+      </div>
+    </div>`;
+}
+
+function rateOptionHtml(hotelId, offer, idx) {
+  const meta = offerMeta(offer);
+  return `
+    <button class="rate-option ${idx === 0 ? "is-selected" : ""}" type="button" data-hotel-id="${attr(hotelId)}" data-offer-index="${idx}" onclick="selectRateOption(event, this)">
+      <span>
+        <span class="rate-option-title">${clean(roomTitleFor(offer))}</span>
+        <span class="rate-option-meta">${clean(meta.boardLabel)} · ${clean(meta.refundLabel)}</span>
+      </span>
+      <span class="rate-option-price">${clean(offerPriceLabel(offer))}<small>${clean(perNightLabel(offer))}/night</small></span>
+    </button>`;
+}
+
 function offerSummaryHtml(hotelId, hotelName, o, nights) {
   const meta = offerMeta(o);
   const roomTitle = roomTitleFor(o);
-  const roomCode = [o.roomType, o.bookingCode].filter(Boolean).join(" / ");
   const totalPrice = `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
-  const nightPrice = `${o.currency || ""} ${o.avgPerNight || "?"}`.trim();
+  const nightPrice = perNightLabel(o);
 
   return `
     <div class="offer-row" data-offer-id="${attr(o.offerId)}" data-hotel-name="${attr(hotelName)}" onclick="showDetailFromElement(this)">
       <div>
         <div class="offer-room-type">${clean(roomTitle)}</div>
-        ${roomCode ? `<div class="offer-code">Rate code ${clean(roomCode)}</div>` : ""}
         <div class="chips">
           <span class="chip board-pill">${clean(meta.boardLabel)}</span>
           <span class="chip refund-${meta.refundKey}">${clean(meta.refundLabel)}</span>
@@ -993,13 +1118,36 @@ function offerSummaryHtml(hotelId, hotelName, o, nights) {
     </div>`;
 }
 
-function updateSelectedOffer(hotelId) {
+function toggleRatePicker(event, hotelId) {
+  event.stopPropagation();
+  const picker = document.getElementById(`rate-picker-${hotelId}`);
+  if (!picker) return;
+  const shouldOpen = !picker.classList.contains("open");
+  document.querySelectorAll(".rate-picker.open").forEach(node => node.classList.remove("open"));
+  if (shouldOpen) picker.classList.add("open");
+}
+
+function selectRateOption(event, el) {
+  event.stopPropagation();
+  updateSelectedOffer(el.dataset.hotelId, Number(el.dataset.offerIndex));
+}
+
+function updateSelectedOffer(hotelId, offerIndex = 0) {
   const hotel = currentHotels.find(h => h.hotelId === hotelId);
-  const select = document.getElementById(`offer-select-${hotelId}`);
   const target = document.getElementById(`selected-offer-${hotelId}`);
-  if (!hotel || !select || !target) return;
-  const selected = hotel.offers[Number(select.value)] || hotel.offers[0];
+  const picker = document.getElementById(`rate-picker-${hotelId}`);
+  if (!hotel || !target || !picker) return;
+  const selected = hotel.offers[offerIndex] || hotel.offers[0];
   target.innerHTML = offerSummaryHtml(hotelId, hotel.name, selected, currentNights || 1);
+  const triggerTitle = picker.querySelector(".rate-title");
+  const triggerSub = picker.querySelector(".rate-sub");
+  const selectedMeta = offerMeta(selected);
+  if (triggerTitle) triggerTitle.textContent = roomTitleFor(selected);
+  if (triggerSub) triggerSub.textContent = `${selectedMeta.boardLabel} · ${selectedMeta.refundLabel} · ${offerPriceLabel(selected)} total`;
+  picker.querySelectorAll(".rate-option").forEach((option, idx) => {
+    option.classList.toggle("is-selected", idx === offerIndex);
+  });
+  picker.classList.remove("open");
 }
 
 function showDetailFromElement(el) {
@@ -1065,6 +1213,10 @@ function closeModal(e) {
     document.getElementById("modalBackdrop").classList.remove("open");
   }
 }
+
+document.addEventListener("click", () => {
+  document.querySelectorAll(".rate-picker.open").forEach(node => node.classList.remove("open"));
+});
 </script>
 </body>
 </html>
