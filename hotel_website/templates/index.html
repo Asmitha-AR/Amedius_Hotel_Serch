@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Hotel Search · TBO + MDES Comparison</title>
+<title>Hotel Search · TBO + Amadeus Comparison</title>
 <style>
   :root {
     --ink: #172033;
@@ -340,6 +340,63 @@
   .gallery-strip img { height: 220px; border-radius: var(--radius); border: 1px solid var(--line); object-fit: cover; flex-shrink: 0; cursor: pointer; }
   .gallery-strip img:hover { box-shadow: 0 8px 22px rgba(0,0,0,0.18); }
 
+  .gallery-main {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background: #0c0f15;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery-counter {
+    position: absolute; right: 14px; bottom: 14px;
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(0,0,0,0.55); color: #fff; font-size: 0.78rem; font-weight: 800;
+    backdrop-filter: blur(6px);
+  }
+  .gallery-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 42px; height: 42px; border-radius: 50%; border: 0;
+    background: rgba(255,255,255,0.9); color: var(--ink);
+    cursor: pointer; font-size: 1.2rem; font-weight: 900;
+    display: grid; place-items: center;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+  .gallery-nav:hover { background: #fff; }
+  .gallery-nav.prev { left: 14px; }
+  .gallery-nav.next { right: 14px; }
+  .gallery-thumbs {
+    display: flex; gap: 6px; overflow-x: auto;
+    padding-bottom: 4px; margin-bottom: 16px;
+  }
+  .gallery-thumb {
+    flex-shrink: 0; width: 96px; height: 64px;
+    border-radius: 6px; overflow: hidden;
+    border: 2px solid transparent; cursor: pointer;
+    opacity: 0.7; transition: opacity 0.15s, border-color 0.15s;
+  }
+  .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .gallery-thumb:hover { opacity: 1; }
+  .gallery-thumb.is-active { opacity: 1; border-color: var(--blue); }
+  .gallery-thumb.tbo.is-active { border-color: var(--green-soft); }
+
+  .room-highlight {
+    background: #f1f6ff;
+    border: 1px solid #c9dafd;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .room-highlight.tbo { background: #e8f7ef; border-color: #b9e3d2; }
+  .room-highlight h4 { margin: 0 0 8px; font-size: 1.05rem; }
+  .room-highlight .room-line { color: var(--muted); font-size: 0.86rem; margin-top: 4px; }
+  .room-highlight .price-line { color: var(--navy); font-weight: 950; font-size: 1.25rem; margin-top: 8px; }
+
+  .room-list { display: grid; gap: 10px; }
+  .room-list .offer-row { cursor: default; }
+
   .filter-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .filter-input { width: 240px; height: 38px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 12px; outline: none; }
   .filter-input:focus { border-color: var(--green-soft); box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
@@ -375,9 +432,9 @@
         <span class="brand-mark">H</span>
         <span>Hotel Search · Test Bench</span>
       </div>
-      <span class="provider">TBO + Amadeus MDES comparison</span>
+      <span class="provider">TBO + Amadeus comparison</span>
     </div>
-    <h1>Compare TBO and Immediate (MDES) hotel search side by side.</h1>
+    <h1>Compare TBO and Amadeus hotel search side by side.</h1>
     <p>Pick a provider, run a search, and inspect the differences in coverage, autocomplete, room data, and imagery.</p>
   </div>
 </header>
@@ -386,19 +443,19 @@
   <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
     <div class="mode-switch" role="tablist" aria-label="Search provider">
       <button class="mode-btn mdes active" id="modeBtnMdes" onclick="setMode('mdes')" role="tab" aria-selected="true">
-        <span class="dot"></span>Immediate (MDES)
+        <span class="dot"></span>Amadeus
       </button>
       <button class="mode-btn tbo" id="modeBtnTbo" onclick="setMode('tbo')" role="tab" aria-selected="false">
         <span class="dot"></span>TBO Search
       </button>
     </div>
-    <span class="mode-tagline" id="modeTagline">Amadeus MDES · autocomplete + room images</span>
+    <span class="mode-tagline" id="modeTagline">Amadeus · autocomplete + room images</span>
   </div>
 
-  <!-- MDES (Immediate) search panel -->
-  <section class="search-panel" id="panelMdes" aria-label="MDES search">
+  <!-- Amadeus search panel -->
+  <section class="search-panel" id="panelMdes" aria-label="Amadeus search">
     <div class="search-title">
-      <h2>Immediate / MDES search</h2>
+      <h2>Amadeus search</h2>
       <div class="hint">Autocomplete destination, dates, guests, and rooms</div>
     </div>
     <div class="form-row-mdes">
@@ -436,7 +493,7 @@
           <option value="4">4</option>
         </select>
       </div>
-      <button class="btn-search" id="mdesSearchBtn" onclick="doMdesSearch()">Search MDES</button>
+      <button class="btn-search" id="mdesSearchBtn" onclick="doMdesSearch()">Search Amadeus</button>
     </div>
   </section>
 
@@ -522,6 +579,9 @@ const tboFetchQueue = [];
 let tboActiveFetches = 0;
 const TBO_MAX_CONCURRENT = 4;
 let tboObserver;
+const tboAvailabilityByCode = {};
+const tboDetailByCode = {};
+let galleryImages = [], galleryIdx = 0, galleryFlavor = 'mdes';
 
 const today = new Date();
 const ci = new Date(today); ci.setDate(ci.getDate() + 35);
@@ -548,7 +608,7 @@ function setMode(next) {
   document.getElementById('panelMdes').style.display = next === 'mdes' ? 'block' : 'none';
   document.getElementById('panelTbo').style.display = next === 'tbo' ? 'block' : 'none';
   document.getElementById('modeTagline').textContent =
-    next === 'mdes' ? 'Amadeus MDES · autocomplete + room images' : 'TBO Holidays · country/city dropdowns';
+    next === 'mdes' ? 'Amadeus · autocomplete + room images' : 'TBO Holidays · country/city dropdowns';
   document.getElementById('resultsWrap').innerHTML = '';
   if (next === 'tbo' && !document.getElementById('tboCountry').dataset.loaded) {
     loadTboCountries();
@@ -681,7 +741,7 @@ function doMdesSearch() {
   document.getElementById('mdesCityCode').value = city;
 
   btn.disabled = true; btn.textContent = "Searching";
-  const loaderText = hotelCode ? `Fetching this hotel from Amadeus MDES (${hotelCode})` : "Fetching live hotel data from Amadeus MDES";
+  const loaderText = hotelCode ? `Fetching this hotel from Amadeus (${hotelCode})` : "Fetching live hotel data from Amadeus";
   document.getElementById('resultsWrap').innerHTML = `
     <div class="loader-wrap"><div class="spinner"></div><p>${clean(loaderText)}</p></div>`;
 
@@ -690,9 +750,9 @@ function doMdesSearch() {
 
   fetch(`/api/search-hotels?${params.toString()}`)
     .then(r => r.json())
-    .then(data => { btn.disabled = false; btn.textContent = "Search MDES"; renderMdesResults(data, checkin, checkout); })
+    .then(data => { btn.disabled = false; btn.textContent = "Search Amadeus"; renderMdesResults(data, checkin, checkout); })
     .catch(err => {
-      btn.disabled = false; btn.textContent = "Search MDES";
+      btn.disabled = false; btn.textContent = "Search Amadeus";
       document.getElementById('resultsWrap').innerHTML = `<div class="error-box">Error: ${clean(err)}</div>`;
     });
 }
@@ -747,8 +807,8 @@ function renderMdesResults(data, checkin, checkout) {
 
   let html = `
     <div class="results-header">
-      <div><h3>MDES results</h3><p>${avail.length} with availability for ${nights} night${nights !== 1 ? "s" : ""}</p></div>
-      <span class="count-badge">${hotels.length} hotels · Amadeus MDES</span>
+      <div><h3>Amadeus results</h3><p>${avail.length} with availability for ${nights} night${nights !== 1 ? "s" : ""}</p></div>
+      <span class="count-badge">${hotels.length} hotels · Amadeus</span>
     </div>
     <div class="hotel-grid">`;
 
@@ -1096,12 +1156,12 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
     return;
   }
   const codes = results.map(r => r.HotelCode).slice(0, 25);
-  let detailMap = {};
   try {
     const det = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: codes.join(','), Language: 'EN' }) });
     const detData = await det.json();
-    for (const h of (detData.HotelDetails || [])) detailMap[String(h.HotelCode)] = h;
+    for (const h of (detData.HotelDetails || [])) tboDetailByCode[String(h.HotelCode)] = h;
   } catch (e) {}
+  for (const r of results) tboAvailabilityByCode[String(r.HotelCode)] = r;
 
   let html = `
     <div class="results-header">
@@ -1111,32 +1171,37 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
     <div class="hotel-grid">`;
 
   for (const r of results) {
-    const meta = detailMap[String(r.HotelCode)] || {};
+    const meta = tboDetailByCode[String(r.HotelCode)] || {};
     const rooms = r.Rooms || [];
     const lowest = rooms.reduce((min, room) => (room.TotalFare < min || min === null ? room.TotalFare : min), null);
     const fallback = fallbackImageFor({ hotelId: r.HotelCode, name: meta.HotelName || r.HotelCode });
+    const imageCount = (meta.Images || []).length || (meta.Image ? 1 : 0);
     const image = meta.Image || (meta.Images || [])[0] || '';
     html += `
       <article class="hotel-card">
-        <div class="photo-wrap">
+        <div class="photo-wrap" style="cursor:pointer" onclick="openTboHotelModal('${attr(r.HotelCode)}')">
           <div class="photo-fallback" style="--hotel-fallback-image: url('${attr(fallback)}')"><strong>${clean(meta.HotelName || 'Hotel ' + r.HotelCode)}</strong></div>
           ${image ? `<img class="hotel-photo" src="${attr(image)}" alt="${attr(meta.HotelName || '')}" loading="lazy" onerror="this.classList.add('is-hidden')">` : ''}
           <span class="status-pill avail-yes">${rooms.length} rates</span>
+          ${imageCount > 1 ? `<span class="status-pill avail-yes" style="left:auto;right:14px;background:rgba(0,0,0,0.55);color:#fff">${imageCount} photos</span>` : ''}
         </div>
         <div class="hotel-body">
-          <div class="hotel-header">
+          <div class="hotel-header" style="cursor:pointer" onclick="openTboHotelModal('${attr(r.HotelCode)}')">
             <h3 class="hotel-name">${clean(meta.HotelName || 'Hotel ' + r.HotelCode)}</h3>
             <div class="hotel-meta">
               <div class="hotel-location"><span>${clean(meta.Address || '—')}</span></div>
               <div class="hotel-codes">
                 <span class="meta-chip">TBO code ${clean(r.HotelCode)}</span>
                 <span class="meta-chip">${clean(r.Currency || '')} from ${clean(String(lowest))}</span>
+                ${imageCount ? `<span class="meta-chip">${imageCount} photos</span>` : ''}
               </div>
             </div>
           </div>
           <div class="offers-wrap">
             <div class="offers-head"><div class="offers-title">Room offers</div><span class="count-badge tbo">${rooms.length} rates</span></div>
-            ${rooms.slice(0, 6).map(room => tboRoomRowHtml(room, r.Currency)).join('')}
+            <div class="room-list">
+              ${rooms.slice(0, 6).map((room, idx) => tboRoomRowHtml(room, r.Currency, r.HotelCode, idx)).join('')}
+            </div>
           </div>
         </div>
       </article>`;
@@ -1145,14 +1210,14 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
   wrap.innerHTML = html;
 }
 
-function tboRoomRowHtml(room, currency) {
+function tboRoomRowHtml(room, currency, hotelCode, roomIdx) {
   const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
   const meal = (room.MealType || '').replace(/_/g, ' ') || 'Room only';
   const refund = room.IsRefundable ? 'Refundable' : 'Non-refundable';
   const refundKey = room.IsRefundable ? 'YES' : 'NO';
   const inc = room.Inclusion ? room.Inclusion.split(',').slice(0, 3).join(' · ') : '';
   return `
-    <div class="offer-row">
+    <div class="offer-row" onclick="openTboHotelModal('${attr(hotelCode)}', ${roomIdx})" style="cursor:pointer">
       <div>
         <div class="offer-room-type">${clean(name)}</div>
         <div class="chips">
@@ -1165,7 +1230,7 @@ function tboRoomRowHtml(room, currency) {
         <div class="price">${clean(currency || '')} ${clean(String(room.TotalFare ?? '—'))}</div>
         <small>Tax ${clean(String(room.TotalTax ?? '—'))}</small>
       </div>
-      <button class="btn-detail">View</button>
+      <button class="btn-detail" onclick="event.stopPropagation();openTboHotelModal('${attr(hotelCode)}', ${roomIdx})">View</button>
     </div>`;
 }
 
@@ -1307,27 +1372,38 @@ function updateTboCardImage(code, url) {
 }
 
 async function openTboHotel(code, name) {
+  return openTboHotelModal(code);
+}
+
+async function openTboHotelModal(code, focusRoomIdx) {
   const content = document.getElementById('modalContent');
   content.innerHTML = `<div class="spinner tbo" style="margin:30px auto"></div>`;
   document.getElementById('modalBackdrop').classList.add('open');
 
-  try {
-    const res = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: code, Language: 'EN' }) });
-    const data = await res.json();
-    const h = (data.HotelDetails || [])[0];
-    if (!h) { content.innerHTML = `<div class="error-box">No detail returned for hotel ${clean(code)}.</div>`; return; }
-    renderTboDetail(h, name);
-    const url = h.Image || (h.Images || [])[0];
-    if (url && !tboImageCache[code]) { tboImageCache[code] = url; updateTboCardImage(code, url); }
-  } catch (e) {
-    content.innerHTML = `<div class="error-box">Failed to load hotel details: ${clean(e.message || e)}</div>`;
+  let h = tboDetailByCode[String(code)];
+  if (!h) {
+    try {
+      const res = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: String(code), Language: 'EN' }) });
+      const data = await res.json();
+      h = (data.HotelDetails || [])[0];
+      if (h) tboDetailByCode[String(code)] = h;
+    } catch (e) {
+      content.innerHTML = `<div class="error-box">Failed to load hotel details: ${clean(e.message || e)}</div>`;
+      return;
+    }
   }
+  if (!h) { content.innerHTML = `<div class="error-box">No detail returned for hotel ${clean(code)}.</div>`; return; }
+
+  const url = h.Image || (h.Images || [])[0];
+  if (url && !tboImageCache[code]) { tboImageCache[code] = url; updateTboCardImage(code, url); }
+
+  renderTboDetail(h, code, focusRoomIdx);
 }
 
-function renderTboDetail(h, fallbackName) {
+function renderTboDetail(h, hotelCode, focusRoomIdx) {
   const content = document.getElementById('modalContent');
   const s = tboStarsFor(h.HotelRating);
-  const images = h.Images || (h.Image ? [h.Image] : []);
+  const images = (h.Images && h.Images.length) ? h.Images : (h.Image ? [h.Image] : []);
   const facs = h.HotelFacilities || [];
   const attractions = h.Attractions ? String(h.Attractions).split(',').map(x => x.trim()).filter(Boolean) : [];
   let mapHref = '';
@@ -1336,10 +1412,16 @@ function renderTboDetail(h, fallbackName) {
     if (lat && lng) mapHref = `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
-  let html = `<h3>${clean(h.HotelName || fallbackName)} <span style="color:#F59E0B;font-size:0.9rem;margin-left:8px">${tboStars(s)}</span></h3>`;
+  const avail = tboAvailabilityByCode[String(hotelCode)];
+  const rooms = (avail && avail.Rooms) ? avail.Rooms : [];
+  const currency = avail ? avail.Currency : '';
+  const highlightedRoom = (typeof focusRoomIdx === 'number') ? rooms[focusRoomIdx] : null;
+
+  let html = `<h3>${clean(h.HotelName || ('Hotel ' + hotelCode))} <span style="color:#F59E0B;font-size:0.9rem;margin-left:8px">${tboStars(s)}</span></h3>`;
 
   if (images.length) {
-    html += `<div class="gallery-strip">${images.slice(0, 8).map(u => `<img src="${attr(u)}" alt="${attr(h.HotelName)}" loading="lazy">`).join('')}</div>`;
+    galleryImages = images; galleryIdx = 0; galleryFlavor = 'tbo';
+    html += galleryHtml(h.HotelName || '');
   }
 
   html += `<div class="info-grid">
@@ -1351,8 +1433,46 @@ function renderTboDetail(h, fallbackName) {
 
   if (h.Address) html += `<div class="section-label">Address</div><p class="desc-text">${clean(h.Address)}</p>`;
 
+  if (highlightedRoom) {
+    const name = Array.isArray(highlightedRoom.Name) ? highlightedRoom.Name.join(' · ') : (highlightedRoom.Name || 'Room');
+    const meal = (highlightedRoom.MealType || '').replace(/_/g, ' ') || 'Room only';
+    const refund = highlightedRoom.IsRefundable ? 'Refundable' : 'Non-refundable';
+    html += `<div class="room-highlight tbo">
+      <h4>Selected room: ${clean(name)}</h4>
+      <div class="room-line">${clean(meal)} · ${clean(refund)}${highlightedRoom.Inclusion ? ' · ' + clean(highlightedRoom.Inclusion.replace(/\|/g, ', ')) : ''}</div>
+      <div class="price-line">${clean(currency)} ${clean(String(highlightedRoom.TotalFare ?? '—'))} <small style="font-weight:600;color:var(--muted)">total · tax ${clean(String(highlightedRoom.TotalTax ?? '—'))}</small></div>
+    </div>`;
+  }
+
+  if (rooms.length) {
+    html += `<div class="section-label">All room offers (${rooms.length})</div><div class="room-list">`;
+    rooms.forEach((room, idx) => {
+      const isFocus = idx === focusRoomIdx;
+      const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
+      const meal = (room.MealType || '').replace(/_/g, ' ') || 'Room only';
+      const refund = room.IsRefundable ? 'Refundable' : 'Non-refundable';
+      const refundKey = room.IsRefundable ? 'YES' : 'NO';
+      html += `<div class="offer-row" style="background:${isFocus ? '#e8f7ef' : '#fbfcfe'};border-color:${isFocus ? '#b9e3d2' : 'var(--line)'}">
+        <div>
+          <div class="offer-room-type">${clean(name)}</div>
+          <div class="chips">
+            <span class="chip board-pill">${clean(meal)}</span>
+            <span class="chip refund-${refundKey}">${clean(refund)}</span>
+            ${room.Inclusion ? `<span class="chip board-pill">${clean(room.Inclusion.split('|').slice(0,2).join(', '))}</span>` : ''}
+          </div>
+        </div>
+        <div class="price-block">
+          <div class="price">${clean(currency || '')} ${clean(String(room.TotalFare ?? '—'))}</div>
+          <small>Tax ${clean(String(room.TotalTax ?? '—'))}</small>
+        </div>
+        <span></span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
   if (facs.length) {
-    html += `<div class="section-label">Facilities</div><div>${facs.map(f => `<span class="facility-tag">${clean(f)}</span>`).join('')}</div>`;
+    html += `<div class="section-label">Facilities</div><div>${facs.slice(0, 24).map(f => `<span class="facility-tag">${clean(f)}</span>`).join('')}</div>`;
   }
   if (attractions.length) {
     html += `<div class="section-label">Nearby attractions</div><div>${attractions.map(a => `<span class="facility-tag">${clean(a)}</span>`).join('')}</div>`;
@@ -1365,10 +1485,56 @@ function renderTboDetail(h, fallbackName) {
   if (actions.length) html += `<div style="margin-top:14px">${actions.join(' ')}</div>`;
 
   content.innerHTML = html;
+  bindGalleryNav();
+}
+
+function galleryHtml(alt) {
+  const total = galleryImages.length;
+  const main = galleryImages[galleryIdx] || '';
+  let thumbs = '';
+  galleryImages.slice(0, 18).forEach((url, i) => {
+    thumbs += `<div class="gallery-thumb ${galleryFlavor} ${i === galleryIdx ? 'is-active' : ''}" data-gidx="${i}"><img src="${attr(url)}" alt="${attr(alt)}" loading="lazy"></div>`;
+  });
+  return `
+    <div class="gallery-main">
+      <img id="galleryMainImg" src="${attr(main)}" alt="${attr(alt)}" />
+      ${total > 1 ? `<button class="gallery-nav prev" data-gnav="-1" aria-label="Previous">‹</button><button class="gallery-nav next" data-gnav="1" aria-label="Next">›</button>` : ''}
+      ${total > 0 ? `<span class="gallery-counter" id="galleryCounter">${galleryIdx + 1} / ${total}</span>` : ''}
+    </div>
+    <div class="gallery-thumbs" id="galleryThumbs">${thumbs}</div>`;
+}
+
+function bindGalleryNav() {
+  document.querySelectorAll('[data-gnav]').forEach(el => {
+    el.addEventListener('click', () => galleryStep(Number(el.dataset.gnav)));
+  });
+  document.querySelectorAll('.gallery-thumb').forEach(el => {
+    el.addEventListener('click', () => galleryGoto(Number(el.dataset.gidx)));
+  });
+}
+
+function galleryStep(delta) {
+  if (!galleryImages.length) return;
+  galleryGoto((galleryIdx + delta + galleryImages.length) % galleryImages.length);
+}
+
+function galleryGoto(idx) {
+  galleryIdx = idx;
+  const img = document.getElementById('galleryMainImg');
+  const counter = document.getElementById('galleryCounter');
+  if (img) img.src = galleryImages[galleryIdx];
+  if (counter) counter.textContent = `${galleryIdx + 1} / ${galleryImages.length}`;
+  document.querySelectorAll('.gallery-thumb').forEach((el, i) => el.classList.toggle('is-active', i === galleryIdx));
 }
 
 function closeModal(e) { if (e.target === document.getElementById('modalBackdrop')) document.getElementById('modalBackdrop').classList.remove('open'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('modalBackdrop').classList.remove('open'); });
+document.addEventListener('keydown', e => {
+  const isOpen = document.getElementById('modalBackdrop').classList.contains('open');
+  if (e.key === 'Escape') document.getElementById('modalBackdrop').classList.remove('open');
+  if (!isOpen || !galleryImages.length) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); galleryStep(-1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); galleryStep(1); }
+});
 </script>
 </body>
 </html>
