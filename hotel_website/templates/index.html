@@ -112,9 +112,16 @@
   }
   .form-row-tbo {
     display: grid;
-    grid-template-columns: 1.1fr 1.1fr auto;
+    grid-template-columns: 1fr 1fr 1.4fr;
     gap: 12px;
     align-items: end;
+  }
+  .form-row-tbo-2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+    margin-top: 12px;
   }
 
   .field { position: relative; }
@@ -437,7 +444,7 @@
   <section class="search-panel" id="panelTbo" aria-label="TBO search" style="display:none">
     <div class="search-title">
       <h2>TBO search</h2>
-      <div class="hint">Pick country and city — TBO returns hotels with details</div>
+      <div class="hint">Pick country &amp; city, optionally narrow to a hotel, then choose dates &amp; guests</div>
     </div>
     <div class="form-row-tbo">
       <div class="field">
@@ -450,6 +457,41 @@
         <label for="tboCity">City</label>
         <select id="tboCity" disabled onchange="onTboCityChange()">
           <option value="">Select country first</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tboHotel">Hotel (optional)</label>
+        <input id="tboHotel" type="text" placeholder="Pick city first, then type to search" autocomplete="off" disabled
+               oninput="onTboHotelInput()" onfocus="onTboHotelInput()" onkeydown="onTboHotelKey(event)"/>
+        <input type="hidden" id="tboHotelCode" value=""/>
+        <div class="ac-menu" id="tboAcMenu"></div>
+      </div>
+    </div>
+    <div class="form-row-tbo-2">
+      <div class="field">
+        <label for="tboCheckin">Check-in</label>
+        <input id="tboCheckin" type="date"/>
+      </div>
+      <div class="field">
+        <label for="tboCheckout">Check-out</label>
+        <input id="tboCheckout" type="date"/>
+      </div>
+      <div class="field">
+        <label for="tboAdults">Adults</label>
+        <select id="tboAdults">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tboRooms">Rooms</label>
+        <select id="tboRooms">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
         </select>
       </div>
       <button class="btn-search tbo" id="tboSearchBtn" onclick="doTboSearch()" disabled>Search TBO</button>
@@ -487,6 +529,8 @@ const co = new Date(today); co.setDate(co.getDate() + 37);
 document.getElementById("mdesCheckin").value = ci.toISOString().slice(0, 10);
 document.getElementById("mdesCheckout").value = co.toISOString().slice(0, 10);
 document.getElementById("mdesDest").value = "Dubai (DXB)";
+document.getElementById("tboCheckin").value = ci.toISOString().slice(0, 10);
+document.getElementById("tboCheckout").value = co.toISOString().slice(0, 10);
 
 function clean(value) {
   return String(value || "").replace(/[&<>"']/g, char => ({
@@ -889,6 +933,7 @@ async function onTboCountryChange() {
   const cityEl = document.getElementById('tboCity');
   document.getElementById('tboSearchBtn').disabled = true;
   cityEl.disabled = true; cityEl.innerHTML = '<option value="">Loading cities…</option>';
+  resetTboHotelField();
   if (!code) { cityEl.innerHTML = '<option value="">Select country first</option>'; return; }
   try {
     const res = await fetch('/api/tbo/cities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ CountryCode: code }) });
@@ -903,33 +948,225 @@ async function onTboCountryChange() {
 }
 
 function onTboCityChange() {
-  document.getElementById('tboSearchBtn').disabled = !document.getElementById('tboCity').value;
+  const cityCode = document.getElementById('tboCity').value;
+  document.getElementById('tboSearchBtn').disabled = !cityCode;
+  resetTboHotelField();
+  const hotelInput = document.getElementById('tboHotel');
+  hotelInput.disabled = !cityCode;
+  hotelInput.placeholder = cityCode ? 'Type to find a hotel in this city…' : 'Pick city first, then type to search';
 }
+
+function resetTboHotelField() {
+  document.getElementById('tboHotel').value = '';
+  document.getElementById('tboHotelCode').value = '';
+  closeTboAutocomplete();
+}
+
+let tboAcItems = [], tboAcActiveIdx = -1, tboAcTimer = null, tboAcAbort = null, tboAcLatest = '';
+
+function onTboHotelInput() {
+  const cityCode = document.getElementById('tboCity').value;
+  const value = document.getElementById('tboHotel').value.trim();
+  document.getElementById('tboHotelCode').value = '';
+  if (!cityCode) { closeTboAutocomplete(); return; }
+  if (tboAcTimer) clearTimeout(tboAcTimer);
+  tboAcTimer = setTimeout(() => fetchTboHotelAutocomplete(cityCode, value), 200);
+}
+
+async function fetchTboHotelAutocomplete(cityCode, query) {
+  if (tboAcAbort) tboAcAbort.abort();
+  tboAcAbort = new AbortController();
+  tboAcLatest = `${cityCode}|${query}`;
+  try {
+    const res = await fetch(`/api/tbo/autocomplete-hotels?city=${encodeURIComponent(cityCode)}&q=${encodeURIComponent(query)}`, { signal: tboAcAbort.signal });
+    const data = await res.json();
+    if (tboAcLatest !== `${cityCode}|${query}`) return;
+    renderTboAutocomplete(data.hotels || []);
+  } catch (e) { if (e.name !== 'AbortError') closeTboAutocomplete(); }
+}
+
+function renderTboAutocomplete(hotels) {
+  const menu = document.getElementById('tboAcMenu');
+  tboAcItems = hotels.slice(0, 12);
+  if (!tboAcItems.length) {
+    menu.innerHTML = `<div class="ac-empty">No hotels match.</div>`;
+    menu.classList.add('open');
+    return;
+  }
+  menu.innerHTML = tboAcItems.map((h, i) => `
+    <div class="ac-item" data-idx="${i}" onclick="pickTboHotel(${i})">
+      <div><div class="ac-item-title">${clean(h.name)}</div><div class="ac-item-sub">${clean(h.address || h.city || '')}</div></div>
+      <div class="ac-item-code">${clean(h.code)}</div>
+    </div>`).join('');
+  menu.classList.add('open');
+  tboAcActiveIdx = -1;
+}
+
+function closeTboAutocomplete() {
+  const m = document.getElementById('tboAcMenu');
+  if (m) m.classList.remove('open');
+  tboAcActiveIdx = -1;
+}
+
+function pickTboHotel(idx) {
+  const h = tboAcItems[idx];
+  if (!h) return;
+  document.getElementById('tboHotel').value = `${h.name} (${h.code})`;
+  document.getElementById('tboHotelCode').value = h.code;
+  closeTboAutocomplete();
+}
+
+function onTboHotelKey(e) {
+  const menu = document.getElementById('tboAcMenu');
+  if (!menu.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveTboActive(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveTboActive(-1); }
+  else if (e.key === 'Enter' && tboAcActiveIdx >= 0) { e.preventDefault(); pickTboHotel(tboAcActiveIdx); }
+  else if (e.key === 'Escape') { closeTboAutocomplete(); }
+}
+
+function moveTboActive(delta) {
+  if (!tboAcItems.length) return;
+  tboAcActiveIdx = (tboAcActiveIdx + delta + tboAcItems.length) % tboAcItems.length;
+  document.querySelectorAll('#tboAcMenu .ac-item').forEach(el => {
+    el.classList.toggle('is-active', Number(el.dataset.idx) === tboAcActiveIdx);
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#tboHotel') && !e.target.closest('#tboAcMenu')) closeTboAutocomplete();
+});
 
 async function doTboSearch() {
   const cityCode = document.getElementById('tboCity').value;
   if (!cityCode) return;
   const cityName = document.getElementById('tboCity').selectedOptions[0].text;
   const countryName = document.getElementById('tboCountry').selectedOptions[0].text;
+  const checkin = document.getElementById('tboCheckin').value;
+  const checkout = document.getElementById('tboCheckout').value;
+  const adults = document.getElementById('tboAdults').value;
+  const rooms = document.getElementById('tboRooms').value;
+  const hotelCode = document.getElementById('tboHotelCode').value.trim();
   const btn = document.getElementById('tboSearchBtn');
-  btn.disabled = true;
 
+  if (!checkin || !checkout) { alert("Pick check-in and check-out dates."); return; }
+
+  btn.disabled = true;
+  const label = hotelCode ? `hotel ${hotelCode}` : `all hotels in ${cityName}`;
   document.getElementById('resultsWrap').innerHTML = `
-    <div class="loader-wrap"><div class="spinner tbo"></div><p>Loading TBO hotels in ${clean(cityName)}…</p></div>`;
+    <div class="loader-wrap"><div class="spinner tbo"></div><p>TBO availability search · ${clean(label)}…</p></div>`;
 
   try {
-    const res = await fetch('/api/tbo/hotels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ CityCode: cityCode }) });
+    let hotelCodes = hotelCode;
+    if (!hotelCodes) {
+      const listRes = await fetch('/api/tbo/hotels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ CityCode: cityCode }) });
+      const listData = await listRes.json();
+      if (listData.error) throw new Error(listData.error);
+      const codes = (listData.Hotels || []).map(h => String(h.HotelCode)).filter(Boolean);
+      if (!codes.length) { document.getElementById('resultsWrap').innerHTML = `<div class="empty-state">No TBO hotels in ${clean(cityName)}.</div>`; return; }
+      hotelCodes = codes.slice(0, 100).join(',');
+    }
+    const res = await fetch('/api/tbo/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checkin, checkout, adults, rooms, hotel_codes: hotelCodes }),
+    });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    tboHotels = data.Hotels || [];
-    tboFiltered = tboHotels;
-    tboPage = 1;
-    renderTboResults(cityName, countryName);
+    if (data.error) {
+      document.getElementById('resultsWrap').innerHTML = `<div class="error-box">TBO Search failed: ${clean(data.error)}${data.detail ? '<br><small>' + clean(data.detail) + '</small>' : ''}</div>`;
+      return;
+    }
+    renderTboAvailability(data, cityName, countryName, hotelCodes);
   } catch (e) {
     document.getElementById('resultsWrap').innerHTML = `<div class="error-box">TBO search failed: ${clean(e.message || e)}</div>`;
   } finally {
     btn.disabled = false;
   }
+}
+
+async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
+  const wrap = document.getElementById('resultsWrap');
+  const status = data.Status || {};
+  const results = data.HotelResult || [];
+  if (status.Code && status.Code !== 200 && !results.length) {
+    wrap.innerHTML = `<div class="empty-state">TBO: ${clean(status.Description || 'No availability for the chosen dates.')}</div>`;
+    return;
+  }
+  if (!results.length) {
+    wrap.innerHTML = `<div class="empty-state">No TBO rates returned for these dates.</div>`;
+    return;
+  }
+  const codes = results.map(r => r.HotelCode).slice(0, 25);
+  let detailMap = {};
+  try {
+    const det = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: codes.join(','), Language: 'EN' }) });
+    const detData = await det.json();
+    for (const h of (detData.HotelDetails || [])) detailMap[String(h.HotelCode)] = h;
+  } catch (e) {}
+
+  let html = `
+    <div class="results-header">
+      <div><h3>TBO availability · ${clean(cityName)}</h3><p>${results.length} hotels with rates · ${clean(countryName)}</p></div>
+      <span class="count-badge tbo">${results.length} hotels · TBO</span>
+    </div>
+    <div class="hotel-grid">`;
+
+  for (const r of results) {
+    const meta = detailMap[String(r.HotelCode)] || {};
+    const rooms = r.Rooms || [];
+    const lowest = rooms.reduce((min, room) => (room.TotalFare < min || min === null ? room.TotalFare : min), null);
+    const fallback = fallbackImageFor({ hotelId: r.HotelCode, name: meta.HotelName || r.HotelCode });
+    const image = meta.Image || (meta.Images || [])[0] || '';
+    html += `
+      <article class="hotel-card">
+        <div class="photo-wrap">
+          <div class="photo-fallback" style="--hotel-fallback-image: url('${attr(fallback)}')"><strong>${clean(meta.HotelName || 'Hotel ' + r.HotelCode)}</strong></div>
+          ${image ? `<img class="hotel-photo" src="${attr(image)}" alt="${attr(meta.HotelName || '')}" loading="lazy" onerror="this.classList.add('is-hidden')">` : ''}
+          <span class="status-pill avail-yes">${rooms.length} rates</span>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-header">
+            <h3 class="hotel-name">${clean(meta.HotelName || 'Hotel ' + r.HotelCode)}</h3>
+            <div class="hotel-meta">
+              <div class="hotel-location"><span>${clean(meta.Address || '—')}</span></div>
+              <div class="hotel-codes">
+                <span class="meta-chip">TBO code ${clean(r.HotelCode)}</span>
+                <span class="meta-chip">${clean(r.Currency || '')} from ${clean(String(lowest))}</span>
+              </div>
+            </div>
+          </div>
+          <div class="offers-wrap">
+            <div class="offers-head"><div class="offers-title">Room offers</div><span class="count-badge tbo">${rooms.length} rates</span></div>
+            ${rooms.slice(0, 6).map(room => tboRoomRowHtml(room, r.Currency)).join('')}
+          </div>
+        </div>
+      </article>`;
+  }
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function tboRoomRowHtml(room, currency) {
+  const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
+  const meal = (room.MealType || '').replace(/_/g, ' ') || 'Room only';
+  const refund = room.IsRefundable ? 'Refundable' : 'Non-refundable';
+  const refundKey = room.IsRefundable ? 'YES' : 'NO';
+  const inc = room.Inclusion ? room.Inclusion.split(',').slice(0, 3).join(' · ') : '';
+  return `
+    <div class="offer-row">
+      <div>
+        <div class="offer-room-type">${clean(name)}</div>
+        <div class="chips">
+          <span class="chip board-pill">${clean(meal)}</span>
+          <span class="chip refund-${refundKey}">${clean(refund)}</span>
+          ${inc ? `<span class="chip board-pill">${clean(inc)}</span>` : ''}
+        </div>
+      </div>
+      <div class="price-block">
+        <div class="price">${clean(currency || '')} ${clean(String(room.TotalFare ?? '—'))}</div>
+        <small>Tax ${clean(String(room.TotalTax ?? '—'))}</small>
+      </div>
+      <button class="btn-detail">View</button>
+    </div>`;
 }
 
 function renderTboResults(cityName, countryName) {

@@ -984,6 +984,89 @@ def tbo_hotel_details():
     except requests.RequestException as exc:
         return jsonify({"error": f"TBO request failed: {exc}"}), 502
 
+
+_tbo_city_hotels_cache = {}
+
+
+def tbo_hotels_for_city(city_code):
+    city_code = str(city_code or "").strip()
+    if not city_code:
+        return []
+    if city_code in _tbo_city_hotels_cache:
+        return _tbo_city_hotels_cache[city_code]
+    try:
+        data = tbo_request("POST", "TBOHotelCodeList", {"CityCode": city_code})
+    except (RuntimeError, requests.RequestException) as exc:
+        print(f"TBO TBOHotelCodeList failed for {city_code}: {exc}", flush=True)
+        _tbo_city_hotels_cache[city_code] = []
+        return []
+    out = []
+    for h in (data.get("Hotels") or []):
+        out.append({
+            "name": h.get("HotelName") or "",
+            "code": str(h.get("HotelCode") or ""),
+            "rating": h.get("HotelRating") or "",
+            "address": h.get("Address") or "",
+            "city": h.get("CityName") or "",
+        })
+    _tbo_city_hotels_cache[city_code] = out
+    return out
+
+
+@app.route("/api/tbo/autocomplete-hotels")
+def tbo_autocomplete_hotels():
+    city_code = (request.args.get("city") or "").strip()
+    query = (request.args.get("q") or "").strip().lower()
+    if not city_code:
+        return jsonify({"hotels": []})
+    hotels = tbo_hotels_for_city(city_code)
+    if not query:
+        return jsonify({"hotels": hotels[:12]})
+    out = []
+    for h in hotels:
+        if query in h["name"].lower():
+            out.append(h)
+        if len(out) >= 12:
+            break
+    return jsonify({"hotels": out})
+
+
+@app.route("/api/tbo/search", methods=["POST"])
+def tbo_search():
+    body = request.get_json(silent=True) or {}
+    checkin = body.get("checkin")
+    checkout = body.get("checkout")
+    try:
+        adults = max(1, int(body.get("adults") or 2))
+        rooms = max(1, int(body.get("rooms") or 1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "adults and rooms must be integers"}), 400
+    hotel_codes = (body.get("hotel_codes") or "").strip()
+    nationality = (body.get("nationality") or "AE").upper()
+    if not checkin or not checkout:
+        return jsonify({"error": "checkin and checkout required"}), 400
+    if not hotel_codes:
+        return jsonify({"error": "hotel_codes required (comma-separated)"}), 400
+    pax_rooms = [{"Adults": adults, "Children": 0, "ChildrenAges": []} for _ in range(rooms)]
+    payload = {
+        "CheckIn": checkin,
+        "CheckOut": checkout,
+        "HotelCodes": hotel_codes,
+        "GuestNationality": nationality,
+        "PaxRooms": pax_rooms,
+        "ResponseTime": 25,
+        "IsDetailedResponse": True,
+        "Filters": {"Refundable": False, "NoOfRooms": 0, "MealType": "All"},
+    }
+    try:
+        return jsonify(tbo_request("POST", "Search", payload))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except requests.RequestException as exc:
+        status = getattr(exc.response, "status_code", 502) if hasattr(exc, "response") and exc.response is not None else 502
+        body_txt = exc.response.text[:600] if hasattr(exc, "response") and exc.response is not None else str(exc)
+        return jsonify({"error": f"TBO Search failed", "status": status, "detail": body_txt}), 502
+
 @app.route("/api/hotel-images/<hotel_id>")
 def hotel_images(hotel_id):
     return jsonify({"hotelId": hotel_id, "images": get_hotel_images(hotel_id)})
