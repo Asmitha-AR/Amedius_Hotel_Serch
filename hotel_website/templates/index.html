@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Hotel Search</title>
+<title>Hotel Search · TBO + MDES Comparison</title>
 <style>
   :root {
     --ink: #172033;
@@ -13,12 +13,11 @@
     --soft-line: #edf1f6;
     --paper: #ffffff;
     --wash: #f5f7fa;
-    --cream: #fbfaf6;
     --navy: #183153;
     --blue: #2563eb;
     --blue-dark: #1d4ed8;
-    --teal: #0f766e;
     --green: #15803d;
+    --green-soft: #1D9E75;
     --amber: #b45309;
     --red: #b42318;
     --shadow: 0 18px 45px rgba(23, 32, 51, 0.08);
@@ -30,17 +29,13 @@
     margin: 0;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--ink);
-    background:
-      linear-gradient(180deg, #fff 0, #fff 220px, var(--wash) 220px, var(--wash) 100%);
+    background: linear-gradient(180deg, #fff 0, #fff 240px, var(--wash) 240px, var(--wash) 100%);
   }
 
   button, input, select { font: inherit; }
   a { color: inherit; }
 
-  .shell {
-    width: min(1180px, calc(100% - 40px));
-    margin: 0 auto;
-  }
+  .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
 
   .hero {
     background:
@@ -49,105 +44,80 @@
     background-size: cover;
     background-position: center 58%;
     color: #fff;
-    min-height: 270px;
-    display: flex;
-    align-items: flex-start;
+    min-height: 290px;
   }
 
   .hero-inner {
     width: min(1180px, calc(100% - 40px));
     margin: 0 auto;
-    padding: 36px 0 96px;
+    padding: 36px 0 110px;
   }
 
-  .brand-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 38px;
-  }
+  .brand-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 38px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.05rem; }
+  .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.24); }
+  .provider { border: 1px solid rgba(255,255,255,0.28); color: rgba(255,255,255,0.86); border-radius: 999px; padding: 7px 12px; font-size: 0.78rem; font-weight: 700; }
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 800;
-    font-size: 1.05rem;
-  }
+  .hero h1 { max-width: 760px; margin: 0; font-size: clamp(2rem, 5vw, 3.6rem); line-height: 1; }
+  .hero p { max-width: 640px; margin: 16px 0 0; color: rgba(255,255,255,0.82); font-size: 1rem; line-height: 1.6; }
 
-  .brand-mark {
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.14);
-    border: 1px solid rgba(255,255,255,0.24);
-  }
-
-  .provider {
-    border: 1px solid rgba(255,255,255,0.28);
-    color: rgba(255,255,255,0.86);
+  .mode-switch {
+    position: relative;
+    z-index: 3;
+    margin-top: -78px;
+    display: inline-flex;
+    background: var(--paper);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 0.78rem;
-    font-weight: 700;
+    padding: 6px;
+    box-shadow: var(--shadow);
   }
-
-  .hero h1 {
-    max-width: 690px;
-    margin: 0;
-    font-size: clamp(2rem, 5vw, 4.25rem);
-    line-height: 0.95;
-    letter-spacing: 0;
+  .mode-btn {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 10px 22px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
   }
-
-  .hero p {
-    max-width: 620px;
-    margin: 18px 0 0;
-    color: rgba(255,255,255,0.82);
-    font-size: 1rem;
-    line-height: 1.6;
-  }
+  .mode-btn .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .mode-btn.mdes .dot { background: var(--blue); }
+  .mode-btn.tbo .dot { background: var(--green-soft); }
+  .mode-btn.active { color: var(--ink); background: #eef3fb; }
+  .mode-btn.tbo.active { background: #e8f7ef; }
+  .mode-tagline { color: rgba(255,255,255,0.78); font-size: 0.82rem; margin-left: 14px; align-self: center; }
 
   .search-panel {
     position: relative;
     z-index: 2;
-    margin-top: -58px;
+    margin-top: 14px;
     background: var(--paper);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 18px;
   }
+  .search-title { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 14px; }
+  .search-title h2 { margin: 0; font-size: 1rem; }
+  .hint { color: var(--muted); font-size: 0.82rem; }
 
-  .search-title {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-
-  .search-title h2 {
-    margin: 0;
-    font-size: 1rem;
-    letter-spacing: 0;
-  }
-
-  .hint {
-    color: var(--muted);
-    font-size: 0.82rem;
-  }
-
-  .form-row {
+  .form-row-mdes {
     display: grid;
-    grid-template-columns: 1.1fr repeat(2, 1fr) 0.72fr 0.72fr auto;
+    grid-template-columns: 1.5fr repeat(2, 1fr) 0.72fr 0.72fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+  .form-row-tbo {
+    display: grid;
+    grid-template-columns: 1.1fr 1.1fr auto;
     gap: 12px;
     align-items: end;
   }
 
+  .field { position: relative; }
   .field label {
     display: block;
     color: var(--muted);
@@ -157,9 +127,7 @@
     text-transform: uppercase;
     margin: 0 0 6px;
   }
-
-  .field input,
-  .field select {
+  .field input, .field select {
     width: 100%;
     height: 48px;
     border: 1px solid var(--line);
@@ -170,15 +138,36 @@
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
-
-  .field input:focus,
-  .field select:focus {
+  .field input:focus, .field select:focus {
     border-color: var(--blue);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
   }
+  .field select:disabled { background: #f5f7fa; color: var(--faint); cursor: not-allowed; }
 
-  .btn-search,
-  .btn-detail {
+  /* autocomplete */
+  .ac-menu {
+    position: absolute;
+    z-index: 30;
+    left: 0; right: 0; top: 100%;
+    margin-top: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 16px 38px rgba(23, 32, 51, 0.15);
+    max-height: 320px;
+    overflow: auto;
+    display: none;
+  }
+  .ac-menu.open { display: block; }
+  .ac-group-label { padding: 8px 12px; font-size: 0.7rem; font-weight: 800; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; }
+  .ac-item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 9px 12px; cursor: pointer; }
+  .ac-item:hover, .ac-item.is-active { background: #f1f6ff; }
+  .ac-item-title { font-weight: 800; font-size: 0.95rem; }
+  .ac-item-sub { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+  .ac-item-code { font-weight: 800; color: var(--navy); font-size: 0.85rem; }
+  .ac-empty { padding: 12px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+
+  .btn-search, .btn-detail {
     border: 0;
     border-radius: var(--radius);
     background: var(--ink);
@@ -187,66 +176,22 @@
     cursor: pointer;
     transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
   }
+  .btn-search { height: 48px; padding: 0 24px; min-width: 130px; }
+  .btn-search.tbo { background: var(--green-soft); }
+  .btn-search:hover { background: var(--blue-dark); box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18); transform: translateY(-1px); }
+  .btn-search.tbo:hover { background: #16805e; box-shadow: 0 10px 22px rgba(29, 158, 117, 0.22); }
+  .btn-search:disabled { background: #9aa4b2; cursor: wait; transform: none; box-shadow: none; }
 
-  .btn-search {
-    height: 48px;
-    padding: 0 24px;
-    min-width: 128px;
-  }
+  .results-wrap { padding: 28px 0 60px; }
 
-  .btn-search:hover,
-  .btn-detail:hover {
-    background: var(--blue-dark);
-    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.18);
-    transform: translateY(-1px);
-  }
+  .results-header { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 18px; flex-wrap: wrap; }
+  .results-header h3 { margin: 0; font-size: 1.45rem; }
+  .results-header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+  .count-badge { color: var(--navy); background: #eaf1ff; border: 1px solid #c9dafd; border-radius: 999px; padding: 7px 11px; font-size: 0.8rem; font-weight: 800; white-space: nowrap; }
+  .count-badge.tbo { color: #0f5f47; background: #e1f5ee; border-color: #b9e3d2; }
 
-  .btn-search:disabled {
-    background: #9aa4b2;
-    cursor: wait;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .results-wrap {
-    padding: 28px 0 52px;
-  }
-
-  .results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: end;
-    gap: 18px;
-    margin-bottom: 18px;
-  }
-
-  .results-header h3 {
-    margin: 0;
-    font-size: 1.45rem;
-  }
-
-  .results-header p {
-    margin: 4px 0 0;
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-
-  .count-badge {
-    color: var(--navy);
-    background: #eaf1ff;
-    border: 1px solid #c9dafd;
-    border-radius: 999px;
-    padding: 7px 11px;
-    font-size: 0.8rem;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .hotel-grid {
-    display: grid;
-    gap: 18px;
-  }
-
+  /* ─── MDES result grid ─── */
+  .hotel-grid { display: grid; gap: 18px; }
   .hotel-card {
     display: grid;
     grid-template-columns: minmax(260px, 0.86fr) minmax(0, 1.35fr);
@@ -257,521 +202,159 @@
     overflow: hidden;
     box-shadow: 0 8px 28px rgba(23, 32, 51, 0.06);
   }
-
-  .photo-wrap {
-    position: relative;
-    min-height: 300px;
-    background: #e8edf4;
-  }
-
-  .hotel-photo {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    height: 100%;
-    min-height: 300px;
-    object-fit: cover;
-    display: block;
-  }
-
-  .hotel-photo.is-hidden {
-    display: none;
-  }
-
+  .photo-wrap { position: relative; min-height: 300px; background: #e8edf4; }
+  .hotel-photo { position: relative; z-index: 1; width: 100%; height: 100%; min-height: 300px; object-fit: cover; display: block; }
+  .hotel-photo.is-hidden { display: none; }
   .photo-fallback {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    color: #fff;
-    text-align: center;
-    background-image:
-      linear-gradient(135deg, rgba(24, 49, 83, 0.88), rgba(15, 118, 110, 0.68)),
-      var(--hotel-fallback-image);
-    background-size: cover;
-    background-position: center;
+    position: absolute; inset: 0; display: grid; place-items: center; padding: 24px;
+    color: #fff; text-align: center;
+    background-image: linear-gradient(135deg, rgba(24, 49, 83, 0.88), rgba(15, 118, 110, 0.68)), var(--hotel-fallback-image);
+    background-size: cover; background-position: center;
   }
+  .photo-fallback strong { font-size: 1.35rem; line-height: 1.15; }
+  .status-pill { position: absolute; top: 14px; left: 14px; display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 7px 10px; font-size: 0.78rem; font-weight: 800; box-shadow: 0 8px 20px rgba(0,0,0,0.16); }
+  .avail-yes { color: #065f46; background: #ecfdf3; }
+  .avail-no { color: var(--red); background: #fff1f0; }
 
-  .photo-fallback strong {
-    font-size: 1.35rem;
-    line-height: 1.15;
-  }
+  .hotel-body { display: flex; flex-direction: column; min-width: 0; }
+  .hotel-header { padding: 22px 24px 16px; border-bottom: 1px solid var(--soft-line); }
+  .hotel-name { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.15; }
+  .hotel-meta { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+  .hotel-location { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .hotel-codes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .meta-chip { display: inline-flex; align-items: center; border-radius: 999px; background: #f3f6fb; color: #5b6678; padding: 5px 9px; font-size: 0.74rem; font-weight: 800; }
+  .map-link { color: var(--blue); font-weight: 800; text-decoration: none; }
 
-  .status-pill {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    border-radius: 999px;
-    padding: 7px 10px;
-    font-size: 0.78rem;
-    font-weight: 800;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.16);
-  }
+  .offers-wrap { padding: 18px 24px 22px; display: grid; gap: 14px; }
+  .offers-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+  .offers-title { color: var(--muted); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
 
-  .avail-yes {
-    color: #065f46;
-    background: #ecfdf3;
-  }
-
-  .avail-no {
-    color: var(--red);
-    background: #fff1f0;
-  }
-
-  .hotel-body {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .hotel-header {
-    padding: 22px 24px 16px;
-    border-bottom: 1px solid var(--soft-line);
-  }
-
-  .hotel-name {
-    margin: 0 0 8px;
-    font-size: 1.35rem;
-    line-height: 1.15;
-    letter-spacing: 0;
-  }
-
-  .hotel-meta {
-    color: var(--muted);
-    font-size: 0.86rem;
-    line-height: 1.45;
-  }
-
-  .hotel-location {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-
-  .hotel-codes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .meta-chip {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    background: #f3f6fb;
-    color: #5b6678;
-    padding: 5px 9px;
-    font-size: 0.74rem;
-    font-weight: 800;
-  }
-
-  .map-link {
-    color: var(--blue);
-    font-weight: 800;
-    text-decoration: none;
-  }
-
-  .offers-wrap {
-    padding: 18px 24px 22px;
-    display: grid;
-    gap: 14px;
-  }
-
-  .offers-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .offers-title {
-    color: var(--muted);
-    font-size: 0.76rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .rate-picker {
-    position: relative;
-  }
-
+  .rate-picker { position: relative; }
   .rate-trigger {
-    width: 100%;
-    min-height: 50px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: #fff;
-    color: var(--ink);
+    width: 100%; min-height: 50px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: #fff; color: var(--ink);
     padding: 10px 42px 10px 13px;
-    text-align: left;
-    cursor: pointer;
-    display: grid;
-    gap: 3px;
-    position: relative;
+    text-align: left; cursor: pointer;
+    display: grid; gap: 3px; position: relative;
   }
+  .rate-trigger:hover { border-color: #b8c7e6; background: #fbfcff; }
+  .rate-trigger::after { content: ""; position: absolute; right: 15px; top: 50%; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-65%) rotate(45deg); }
+  .rate-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 850; }
+  .rate-sub { color: var(--muted); font-size: 0.78rem; font-weight: 750; }
 
-  .rate-trigger:hover {
-    border-color: #b8c7e6;
-    background: #fbfcff;
+  .rate-menu { display: none; position: absolute; z-index: 20; inset: calc(100% + 8px) 0 auto 0; max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: 0 18px 40px rgba(23, 32, 51, 0.16); padding: 6px; }
+  .rate-picker.open .rate-menu { display: grid; gap: 4px; }
+  .rate-option { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; border: 0; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; padding: 10px; cursor: pointer; }
+  .rate-option:hover, .rate-option.is-selected { background: #f1f6ff; }
+  .rate-option-title { font-weight: 850; line-height: 1.3; }
+  .rate-option-meta { color: var(--muted); font-size: 0.76rem; font-weight: 750; margin-top: 3px; }
+  .rate-option-price { color: var(--navy); font-weight: 950; white-space: nowrap; text-align: right; }
+  .rate-option-price small { display: block; color: var(--muted); font-size: 0.72rem; margin-top: 3px; }
+
+  .offer-row { display: grid; grid-template-columns: minmax(0, 1.25fr) auto auto; gap: 16px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #fbfcfe; cursor: pointer; }
+  .offer-row:hover { border-color: #b8c7e6; background: #f7faff; }
+  .offer-room-type { font-size: 0.98rem; font-weight: 900; line-height: 1.25; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 0.72rem; font-weight: 850; white-space: nowrap; }
+  .board-pill { color: #23406f; background: #edf4ff; }
+  .refund-YES { color: var(--green); background: #ecfdf3; }
+  .refund-NO { color: var(--red); background: #fff1f0; }
+  .refund-PARTIAL { color: var(--amber); background: #fff7ed; }
+  .price-block { min-width: 136px; text-align: right; }
+  .price { font-size: 1.5rem; color: var(--navy); font-weight: 950; line-height: 1; }
+  .price small { color: var(--muted); display: block; font-size: 0.74rem; font-weight: 700; margin-top: 6px; }
+  .btn-detail { min-width: 112px; min-height: 42px; padding: 0 15px; background: var(--blue); }
+
+  .no-avail-label, .empty-state { color: var(--muted); line-height: 1.6; }
+  .empty-state, .loader-wrap, .error-box {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px; box-shadow: 0 8px 28px rgba(23, 32, 51, 0.06);
   }
-
-  .rate-trigger::after {
-    content: "";
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid var(--muted);
-    border-bottom: 2px solid var(--muted);
-    transform: translateY(-65%) rotate(45deg);
-  }
-
-  .rate-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 850;
-  }
-
-  .rate-sub {
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 750;
-  }
-
-  .rate-menu {
-    display: none;
-    position: absolute;
-    z-index: 20;
-    inset: calc(100% + 8px) 0 auto 0;
-    max-height: 320px;
-    overflow: auto;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: #fff;
-    box-shadow: 0 18px 40px rgba(23, 32, 51, 0.16);
-    padding: 6px;
-  }
-
-  .rate-picker.open .rate-menu {
-    display: grid;
-    gap: 4px;
-  }
-
-  .rate-option {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-    width: 100%;
-    border: 0;
-    border-radius: 7px;
-    background: transparent;
-    color: var(--ink);
-    text-align: left;
-    padding: 10px;
-    cursor: pointer;
-  }
-
-  .rate-option:hover,
-  .rate-option.is-selected {
-    background: #f1f6ff;
-  }
-
-  .rate-option-title {
-    font-weight: 850;
-    line-height: 1.3;
-  }
-
-  .rate-option-meta {
-    color: var(--muted);
-    font-size: 0.76rem;
-    font-weight: 750;
-    margin-top: 3px;
-  }
-
-  .rate-option-price {
-    color: var(--navy);
-    font-weight: 950;
-    white-space: nowrap;
-    text-align: right;
-  }
-
-  .rate-option-price small {
-    display: block;
-    color: var(--muted);
-    font-size: 0.72rem;
-    margin-top: 3px;
-  }
-
-  .offer-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) auto auto;
-    gap: 16px;
-    align-items: center;
-    padding: 16px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: #fbfcfe;
-    cursor: pointer;
-  }
-
-  .offer-row:hover {
-    border-color: #b8c7e6;
-    background: #f7faff;
-  }
-
-  .offer-room-type {
-    font-size: 0.98rem;
-    font-weight: 900;
-    line-height: 1.25;
-  }
-
-  .offer-room-desc {
-    color: var(--muted);
-    font-size: 0.86rem;
-    line-height: 1.45;
-    margin-top: 5px;
-  }
-
-  .chips {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: 0.72rem;
-    font-weight: 850;
-    white-space: nowrap;
-  }
-
-  .board-pill {
-    color: #23406f;
-    background: #edf4ff;
-  }
-
-  .refund-YES {
-    color: var(--green);
-    background: #ecfdf3;
-  }
-
-  .refund-NO {
-    color: var(--red);
-    background: #fff1f0;
-  }
-
-  .refund-PARTIAL {
-    color: var(--amber);
-    background: #fff7ed;
-  }
-
-  .price-block {
-    min-width: 136px;
-    text-align: right;
-  }
-
-  .price {
-    font-size: 1.5rem;
-    color: var(--navy);
-    font-weight: 950;
-    line-height: 1;
-  }
-
-  .price small {
-    color: var(--muted);
-    display: block;
-    font-size: 0.74rem;
-    font-weight: 700;
-    margin-top: 6px;
-  }
-
-  .btn-detail {
-    min-width: 112px;
-    min-height: 42px;
-    padding: 0 15px;
-    background: var(--blue);
-  }
-
-  .no-avail-label,
-  .empty-state {
-    color: var(--muted);
-    line-height: 1.6;
-  }
-
-  .empty-state,
-  .loader-wrap,
-  .error-box {
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 28px;
-    box-shadow: 0 8px 28px rgba(23, 32, 51, 0.06);
-  }
-
-  .loader-wrap {
-    text-align: center;
-    color: var(--muted);
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #d9e1ec;
-    border-top-color: var(--blue);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 14px;
-  }
-
+  .loader-wrap { text-align: center; color: var(--muted); }
+  .spinner { width: 40px; height: 40px; border: 4px solid #d9e1ec; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+  .spinner.tbo { border-top-color: var(--green-soft); }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .error-box { color: var(--red); background: #fff7f7; border-color: #ffd5d2; }
 
-  .error-box {
-    color: var(--red);
-    background: #fff7f7;
-    border-color: #ffd5d2;
-  }
+  /* ─── TBO result grid ─── */
+  .tbo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+  .tbo-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .tbo-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(23, 32, 51, 0.12); }
+  .tbo-img { height: 180px; background: #f0f2f6; position: relative; overflow: hidden; }
+  .tbo-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .tbo-card:hover .tbo-img img { transform: scale(1.04); }
+  .tbo-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #E8F5F0, #EEF0F3); display: grid; place-items: center; color: rgba(0,0,0,0.18); font-size: 2.6rem; }
+  .skeleton { background: linear-gradient(90deg, #eef0f3 25%, #e2e6eb 50%, #eef0f3 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .tbo-body { padding: 14px 16px; }
+  .tbo-stars { color: #F59E0B; font-size: 0.8rem; margin-bottom: 6px; }
+  .tbo-stars .e { color: var(--line); }
+  .tbo-name { font-size: 0.95rem; font-weight: 800; margin-bottom: 6px; line-height: 1.3; }
+  .tbo-addr { font-size: 0.78rem; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 32px; }
+  .tbo-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .tbo-city { font-size: 0.7rem; color: var(--faint); font-weight: 700; text-transform: uppercase; }
+  .tbo-view { font-size: 0.76rem; font-weight: 800; color: var(--green-soft); }
 
-  .modal-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(12, 18, 31, 0.58);
-  }
+  .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 28px; flex-wrap: wrap; }
+  .page-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--muted); display: grid; place-items: center; }
+  .page-btn:hover { border-color: var(--green-soft); color: var(--green-soft); }
+  .page-btn.active { background: var(--green-soft); color: #fff; border-color: var(--green-soft); }
+  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .page-ellipsis { width: 36px; height: 36px; display: grid; place-items: center; color: var(--faint); }
 
+  /* ─── Modals (shared) ─── */
+  .modal-backdrop { display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 24px; background: rgba(12, 18, 31, 0.58); overflow-y: auto; }
   .modal-backdrop.open { display: flex; }
+  .modal { width: min(820px, 100%); max-height: 90vh; overflow: auto; background: #fff; border-radius: var(--radius); box-shadow: 0 24px 70px rgba(0,0,0,0.28); padding: 24px; margin: auto; }
+  .modal-close { float: right; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--muted); cursor: pointer; }
+  .modal h3 { margin: 2px 42px 18px 0; font-size: 1.35rem; }
 
-  .modal {
-    width: min(760px, 100%);
-    max-height: 86vh;
-    overflow: auto;
-    background: #fff;
-    border-radius: var(--radius);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.28);
-    padding: 24px;
-  }
+  .image-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .image-gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--line); }
 
-  .modal-close {
-    float: right;
-    width: 34px;
-    height: 34px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: #fff;
-    color: var(--muted);
-    cursor: pointer;
-  }
+  .section-label { color: var(--muted); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; margin: 18px 0 8px; }
+  .desc-text { color: var(--muted); line-height: 1.6; font-size: 0.94rem; }
+  .amenity-tag { display: inline-flex; margin: 4px; border-radius: 999px; padding: 6px 10px; background: #edf4ff; color: #23406f; font-size: 0.78rem; font-weight: 800; }
+  .facility-tag { display: inline-flex; margin: 3px; border-radius: 999px; padding: 5px 11px; background: #f3f6fb; color: #5b6678; font-size: 0.78rem; font-weight: 700; border: 1px solid var(--line); }
 
-  .modal h3 {
-    margin: 2px 42px 18px 0;
-    color: var(--ink);
-    font-size: 1.35rem;
-  }
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--soft-line); border: 1px solid var(--soft-line); border-radius: var(--radius); overflow: hidden; margin: 14px 0 18px; }
+  .info-cell { background: #fff; padding: 12px 14px; }
+  .info-cell .ic-label { font-size: 0.68rem; font-weight: 800; color: var(--faint); text-transform: uppercase; margin-bottom: 4px; }
+  .info-cell .ic-value { font-size: 0.92rem; font-weight: 700; }
 
-  .image-gallery {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .image-gallery img {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    border-radius: var(--radius);
-    border: 1px solid var(--line);
-  }
-
-  .section-label {
-    color: var(--muted);
-    font-size: 0.76rem;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin: 18px 0 8px;
-  }
-
-  .desc-text {
-    color: var(--muted);
-    line-height: 1.6;
-    font-size: 0.94rem;
-  }
-
-  .amenity-tag {
-    display: inline-flex;
-    margin: 4px;
-    border-radius: 999px;
-    padding: 6px 10px;
-    background: #edf4ff;
-    color: #23406f;
-    font-size: 0.78rem;
-    font-weight: 800;
-  }
-
-  .tax-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-
-  .tax-table th {
-    text-align: left;
-    color: var(--muted);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    padding: 9px 8px;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .tax-table td {
-    padding: 10px 8px;
-    border-bottom: 1px solid var(--soft-line);
-  }
-
+  .tax-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .tax-table th { text-align: left; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; padding: 9px 8px; border-bottom: 1px solid var(--line); }
+  .tax-table td { padding: 10px 8px; border-bottom: 1px solid var(--soft-line); }
   .inc-yes { color: var(--green); font-weight: 800; }
   .inc-no { color: var(--red); font-weight: 800; }
 
+  .gallery-strip { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 6px; }
+  .gallery-strip img { height: 220px; border-radius: var(--radius); border: 1px solid var(--line); object-fit: cover; flex-shrink: 0; cursor: pointer; }
+  .gallery-strip img:hover { box-shadow: 0 8px 22px rgba(0,0,0,0.18); }
+
+  .filter-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-input { width: 240px; height: 38px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 12px; outline: none; }
+  .filter-input:focus { border-color: var(--green-soft); box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
+
   @media (max-width: 900px) {
-    .form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .form-row-mdes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .form-row-tbo { grid-template-columns: 1fr; }
     .btn-search { width: 100%; }
     .hotel-card { grid-template-columns: 1fr; }
     .photo-wrap, .hotel-photo { min-height: 250px; }
     .offer-row { grid-template-columns: 1fr; }
     .rate-option { grid-template-columns: 1fr; }
-    .rate-option-price { white-space: normal; }
     .price-block { text-align: left; }
     .btn-detail { width: 100%; }
+    .info-grid { grid-template-columns: 1fr 1fr; }
   }
-
   @media (max-width: 560px) {
-    .shell,
-    .hero-inner { width: min(100% - 24px, 1180px); }
     .hero-inner { padding-top: 24px; }
     .brand-row { align-items: flex-start; margin-bottom: 26px; }
     .provider { display: none; }
-    .search-title { display: block; }
-    .hint { margin-top: 4px; }
-    .form-row { grid-template-columns: 1fr; }
+    .form-row-mdes { grid-template-columns: 1fr; }
     .results-header { align-items: flex-start; flex-direction: column; }
-    .hotel-header, .offers-wrap { padding-left: 16px; padding-right: 16px; }
     .image-gallery { grid-template-columns: 1fr 1fr; }
   }
 </style>
@@ -783,37 +366,54 @@
     <div class="brand-row">
       <div class="brand">
         <span class="brand-mark">H</span>
-        <span>Hotel Search</span>
+        <span>Hotel Search · Test Bench</span>
       </div>
-      <span class="provider">Live Amadeus GDS availability</span>
+      <span class="provider">TBO + Amadeus MDES comparison</span>
     </div>
-    <h1>Find stays with real rates, not guesswork.</h1>
-    <p>Search live hotel availability, compare room offers, and inspect pricing details from one focused workspace.</p>
+    <h1>Compare TBO and Immediate (MDES) hotel search side by side.</h1>
+    <p>Pick a provider, run a search, and inspect the differences in coverage, autocomplete, room data, and imagery.</p>
   </div>
 </header>
 
 <main class="shell">
-  <section class="search-panel" aria-label="Hotel search">
-    <div class="search-title">
-      <h2>Search hotels</h2>
-      <div class="hint">City code, dates, guests, and rooms</div>
+  <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <div class="mode-switch" role="tablist" aria-label="Search provider">
+      <button class="mode-btn mdes active" id="modeBtnMdes" onclick="setMode('mdes')" role="tab" aria-selected="true">
+        <span class="dot"></span>Immediate (MDES)
+      </button>
+      <button class="mode-btn tbo" id="modeBtnTbo" onclick="setMode('tbo')" role="tab" aria-selected="false">
+        <span class="dot"></span>TBO Search
+      </button>
     </div>
-    <div class="form-row">
+    <span class="mode-tagline" id="modeTagline">Amadeus MDES · autocomplete + room images</span>
+  </div>
+
+  <!-- MDES (Immediate) search panel -->
+  <section class="search-panel" id="panelMdes" aria-label="MDES search">
+    <div class="search-title">
+      <h2>Immediate / MDES search</h2>
+      <div class="hint">Autocomplete destination, dates, guests, and rooms</div>
+    </div>
+    <div class="form-row-mdes">
       <div class="field">
-        <label for="city">City code</label>
-        <input id="city" type="text" value="DXB" placeholder="DXB" maxlength="3"/>
+        <label for="mdesDest">Destination or hotel</label>
+        <input id="mdesDest" type="text" placeholder="e.g. Dubai, DXB, Burj…" autocomplete="off"
+               oninput="onAutocompleteInput()" onfocus="onAutocompleteInput()" onkeydown="onAutocompleteKey(event)"/>
+        <input type="hidden" id="mdesCityCode" value="DXB"/>
+        <input type="hidden" id="mdesHotelCode" value=""/>
+        <div class="ac-menu" id="acMenu"></div>
       </div>
       <div class="field">
-        <label for="checkin">Check-in</label>
-        <input id="checkin" type="date"/>
+        <label for="mdesCheckin">Check-in</label>
+        <input id="mdesCheckin" type="date"/>
       </div>
       <div class="field">
-        <label for="checkout">Check-out</label>
-        <input id="checkout" type="date"/>
+        <label for="mdesCheckout">Check-out</label>
+        <input id="mdesCheckout" type="date"/>
       </div>
       <div class="field">
-        <label for="adults">Adults</label>
-        <select id="adults">
+        <label for="mdesAdults">Adults</label>
+        <select id="mdesAdults">
           <option value="1">1</option>
           <option value="2" selected>2</option>
           <option value="3">3</option>
@@ -821,15 +421,38 @@
         </select>
       </div>
       <div class="field">
-        <label for="rooms">Rooms</label>
-        <select id="rooms">
+        <label for="mdesRooms">Rooms</label>
+        <select id="mdesRooms">
           <option value="1" selected>1</option>
           <option value="2">2</option>
           <option value="3">3</option>
           <option value="4">4</option>
         </select>
       </div>
-      <button class="btn-search" id="searchBtn" onclick="doSearch()">Search</button>
+      <button class="btn-search" id="mdesSearchBtn" onclick="doMdesSearch()">Search MDES</button>
+    </div>
+  </section>
+
+  <!-- TBO search panel -->
+  <section class="search-panel" id="panelTbo" aria-label="TBO search" style="display:none">
+    <div class="search-title">
+      <h2>TBO search</h2>
+      <div class="hint">Pick country and city — TBO returns hotels with details</div>
+    </div>
+    <div class="form-row-tbo">
+      <div class="field">
+        <label for="tboCountry">Country</label>
+        <select id="tboCountry" onchange="onTboCountryChange()">
+          <option value="">Loading…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tboCity">City</label>
+        <select id="tboCity" disabled onchange="onTboCityChange()">
+          <option value="">Select country first</option>
+        </select>
+      </div>
+      <button class="btn-search tbo" id="tboSearchBtn" onclick="doTboSearch()" disabled>Search TBO</button>
     </div>
   </section>
 
@@ -844,27 +467,190 @@
 </div>
 
 <script>
+/* ====================================================================
+   Shared state and helpers
+==================================================================== */
+let mode = 'mdes';
 let currentHotels = [];
 let currentNights = 1;
+let tboHotels = [], tboFiltered = [], tboPage = 1;
+const TBO_PAGE_SIZE = 24;
+const tboImageCache = {};
+const tboFetchQueue = [];
+let tboActiveFetches = 0;
+const TBO_MAX_CONCURRENT = 4;
+let tboObserver;
 
 const today = new Date();
 const ci = new Date(today); ci.setDate(ci.getDate() + 35);
 const co = new Date(today); co.setDate(co.getDate() + 37);
-document.getElementById("checkin").value = ci.toISOString().slice(0, 10);
-document.getElementById("checkout").value = co.toISOString().slice(0, 10);
+document.getElementById("mdesCheckin").value = ci.toISOString().slice(0, 10);
+document.getElementById("mdesCheckout").value = co.toISOString().slice(0, 10);
+document.getElementById("mdesDest").value = "Dubai (DXB)";
 
 function clean(value) {
   return String(value || "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[char]));
 }
+function attr(v) { return clean(v); }
 
-function attr(value) {
-  return clean(value);
+function setMode(next) {
+  mode = next;
+  document.getElementById('modeBtnMdes').classList.toggle('active', next === 'mdes');
+  document.getElementById('modeBtnMdes').setAttribute('aria-selected', next === 'mdes');
+  document.getElementById('modeBtnTbo').classList.toggle('active', next === 'tbo');
+  document.getElementById('modeBtnTbo').setAttribute('aria-selected', next === 'tbo');
+  document.getElementById('panelMdes').style.display = next === 'mdes' ? 'block' : 'none';
+  document.getElementById('panelTbo').style.display = next === 'tbo' ? 'block' : 'none';
+  document.getElementById('modeTagline').textContent =
+    next === 'mdes' ? 'Amadeus MDES · autocomplete + room images' : 'TBO Holidays · country/city dropdowns';
+  document.getElementById('resultsWrap').innerHTML = '';
+  if (next === 'tbo' && !document.getElementById('tboCountry').dataset.loaded) {
+    loadTboCountries();
+  }
+}
+
+/* ====================================================================
+   MDES autocomplete
+==================================================================== */
+let acItems = [];
+let acActiveIdx = -1;
+let acTimer = null;
+let acAbort = null;
+let acLatestQuery = '';
+
+function onAutocompleteInput() {
+  const value = document.getElementById('mdesDest').value.trim();
+  document.getElementById('mdesHotelCode').value = '';
+  if (acTimer) clearTimeout(acTimer);
+  if (!value || value.length < 2) { closeAutocomplete(); return; }
+  acTimer = setTimeout(() => fetchAutocomplete(value), 220);
+}
+
+async function fetchAutocomplete(value) {
+  if (acAbort) acAbort.abort();
+  acAbort = new AbortController();
+  acLatestQuery = value;
+  try {
+    const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(value)}`, { signal: acAbort.signal });
+    const data = await res.json();
+    if (acLatestQuery !== value) return;
+    renderAutocomplete(data);
+  } catch (e) {
+    if (e.name !== 'AbortError') closeAutocomplete();
+  }
+}
+
+function renderAutocomplete(data) {
+  const menu = document.getElementById('acMenu');
+  const cities = data.cities || [];
+  const hotels = data.hotels || [];
+  acItems = [];
+  let html = '';
+  if (cities.length) {
+    html += `<div class="ac-group-label">Cities</div>`;
+    cities.forEach(c => {
+      acItems.push({ type: 'city', code: c.code, label: `${c.name} (${c.code})`, sub: c.country });
+      html += `<div class="ac-item" data-idx="${acItems.length - 1}" onclick="pickAutocomplete(${acItems.length - 1})">
+        <div><div class="ac-item-title">${clean(c.name)}</div><div class="ac-item-sub">${clean(c.country)}</div></div>
+        <div class="ac-item-code">${clean(c.code)}</div>
+      </div>`;
+    });
+  }
+  if (hotels.length) {
+    html += `<div class="ac-group-label">Hotels</div>`;
+    hotels.forEach(h => {
+      acItems.push({ type: 'hotel', code: h.city, hotelId: h.hotelId || '', label: `${h.name} (${h.city})`, sub: `Hotel ID ${h.hotelId || '—'}`, name: h.name });
+      html += `<div class="ac-item" data-idx="${acItems.length - 1}" onclick="pickAutocomplete(${acItems.length - 1})">
+        <div><div class="ac-item-title">${clean(h.name)}</div><div class="ac-item-sub">Hotel ID ${clean(h.hotelId || '—')}</div></div>
+        <div class="ac-item-code">${clean(h.city)}</div>
+      </div>`;
+    });
+  }
+  if (!html) html = `<div class="ac-empty">No matches. Try a city name or IATA code.</div>`;
+  menu.innerHTML = html;
+  menu.classList.add('open');
+  acActiveIdx = -1;
+}
+
+function closeAutocomplete() {
+  const m = document.getElementById('acMenu');
+  if (m) m.classList.remove('open');
+  acActiveIdx = -1;
+}
+
+function pickAutocomplete(idx) {
+  const item = acItems[idx];
+  if (!item) return;
+  document.getElementById('mdesDest').value = item.label;
+  document.getElementById('mdesCityCode').value = item.code;
+  document.getElementById('mdesHotelCode').value = item.type === 'hotel' ? (item.hotelId || '') : '';
+  closeAutocomplete();
+}
+
+function onAutocompleteKey(e) {
+  const menu = document.getElementById('acMenu');
+  if (!menu.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
+  else if (e.key === 'Enter' && acActiveIdx >= 0) { e.preventDefault(); pickAutocomplete(acActiveIdx); }
+  else if (e.key === 'Escape') { closeAutocomplete(); }
+}
+
+function moveActive(delta) {
+  if (!acItems.length) return;
+  acActiveIdx = (acActiveIdx + delta + acItems.length) % acItems.length;
+  document.querySelectorAll('#acMenu .ac-item').forEach(el => {
+    el.classList.toggle('is-active', Number(el.dataset.idx) === acActiveIdx);
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#mdesDest') && !e.target.closest('#acMenu')) closeAutocomplete();
+  document.querySelectorAll('.rate-picker.open').forEach(node => node.classList.remove('open'));
+});
+
+/* ====================================================================
+   MDES search (uses existing /api/search-hotels)
+==================================================================== */
+function extractCityCode() {
+  const hidden = document.getElementById('mdesCityCode').value.trim();
+  if (hidden) return hidden.toUpperCase();
+  const raw = document.getElementById('mdesDest').value.trim();
+  const match = raw.match(/\(([A-Z]{3})\)/);
+  if (match) return match[1];
+  if (/^[A-Z]{3}$/i.test(raw)) return raw.toUpperCase();
+  return raw.toUpperCase().slice(0, 3) || 'DXB';
+}
+
+function doMdesSearch() {
+  const city = extractCityCode();
+  const hotelCode = document.getElementById('mdesHotelCode').value.trim();
+  const checkin = document.getElementById('mdesCheckin').value;
+  const checkout = document.getElementById('mdesCheckout').value;
+  const adults = document.getElementById('mdesAdults').value;
+  const rooms = document.getElementById('mdesRooms').value;
+  const btn = document.getElementById('mdesSearchBtn');
+
+  if (!city || !checkin || !checkout) { alert("Pick a destination and dates."); return; }
+  document.getElementById('mdesCityCode').value = city;
+
+  btn.disabled = true; btn.textContent = "Searching";
+  const loaderText = hotelCode ? `Fetching this hotel from Amadeus MDES (${hotelCode})` : "Fetching live hotel data from Amadeus MDES";
+  document.getElementById('resultsWrap').innerHTML = `
+    <div class="loader-wrap"><div class="spinner"></div><p>${clean(loaderText)}</p></div>`;
+
+  const params = new URLSearchParams({ city, checkin, checkout, adults, rooms });
+  if (hotelCode) params.set('hotel_code', hotelCode);
+
+  fetch(`/api/search-hotels?${params.toString()}`)
+    .then(r => r.json())
+    .then(data => { btn.disabled = false; btn.textContent = "Search MDES"; renderMdesResults(data, checkin, checkout); })
+    .catch(err => {
+      btn.disabled = false; btn.textContent = "Search MDES";
+      document.getElementById('resultsWrap').innerHTML = `<div class="error-box">Error: ${clean(err)}</div>`;
+    });
 }
 
 const fallbackImages = [
@@ -882,119 +668,43 @@ const fallbackImages = [
 
 function stableIndex(value, count) {
   let hash = 0;
-  for (const char of String(value || "")) {
-    hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-  }
+  for (const char of String(value || "")) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
   return Math.abs(hash) % count;
 }
-
-function fallbackImageFor(hotel) {
-  const key = `${hotel.hotelId || ""}-${hotel.name || ""}`;
-  return fallbackImages[stableIndex(key, fallbackImages.length)];
-}
-
-function titleCase(value) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/\b[a-z]/g, char => char.toUpperCase())
-    .replace(/\b(Ae|Uae|Usa|Uk)\b/g, match => match.toUpperCase());
-}
-
-function friendlyAddress(hotel) {
+function fallbackImageFor(hotel) { return fallbackImages[stableIndex(`${hotel.hotelId || ""}-${hotel.name || ""}`, fallbackImages.length)]; }
+function titleCase(v) { return String(v || "").toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase()).replace(/\b(Ae|Uae|Usa|Uk)\b/g, m => m.toUpperCase()); }
+function friendlyAddress(h) {
   const parts = [];
-  if (hotel.address) parts.push(titleCase(hotel.address));
-  if (hotel.country && !String(hotel.address || "").includes(hotel.country)) parts.push(hotel.country);
-  return parts.join(", ") || titleCase(hotel.city || "Location not provided");
+  if (h.address) parts.push(titleCase(h.address));
+  if (h.country && !String(h.address || "").includes(h.country)) parts.push(h.country);
+  return parts.join(", ") || titleCase(h.city || "Location not provided");
 }
-
-function friendlyChain(chainCode) {
-  const chains = {
-    AL: "Accor Live Limitless",
-    EN: "SLS / Ennismore",
-    HL: "Hilton",
-    RD: "Radisson",
-    RT: "Rotana"
-  };
-  return chains[chainCode] || (chainCode ? `Chain ${chainCode}` : "Independent hotel");
+function friendlyChain(c) { return ({ AL:"Accor Live Limitless", EN:"SLS / Ennismore", HL:"Hilton", RD:"Radisson", RT:"Rotana" })[c] || (c ? `Chain ${c}` : "Independent hotel"); }
+function cleanRoomText(v) {
+  return String(v || "").replace(/\s+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\bRO-RO\b/gi, "").replace(/\bROOM\s*ONLY\b/gi, "")
+    .replace(/\s*[-|]\s*(AED|USD|EUR|GBP)\s*\d[\d.]*$/i, "").trim();
 }
-
-function cleanRoomText(value) {
-  return String(value || "")
-    .replace(/\s+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\bRO-RO\b/gi, "")
-    .replace(/\bROOM\s*ONLY\b/gi, "")
-    .replace(/\s*[-|]\s*(AED|USD|EUR|GBP)\s*\d[\d.]*$/i, "")
-    .trim();
-}
-
 function roomTitleFor(o) {
-  const description = cleanRoomText(o.description);
-  if (description) return description;
+  const d = cleanRoomText(o.description);
+  if (d) return d;
   return cleanRoomText(`${o.bedType || ""} ${o.roomType || ""}`) || "Selected room";
 }
 
-function doSearch() {
-  const city = document.getElementById("city").value.trim().toUpperCase();
-  const checkin = document.getElementById("checkin").value;
-  const checkout = document.getElementById("checkout").value;
-  const adults = document.getElementById("adults").value;
-  const rooms = document.getElementById("rooms").value;
-  const btn = document.getElementById("searchBtn");
-
-  if (!city || !checkin || !checkout) {
-    alert("Please fill all fields.");
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = "Searching";
-  document.getElementById("resultsWrap").innerHTML = `
-    <div class="loader-wrap">
-      <div class="spinner"></div>
-      <p>Fetching live hotel data from Amadeus</p>
-    </div>`;
-
-  fetch(`/api/search-hotels?city=${encodeURIComponent(city)}&checkin=${encodeURIComponent(checkin)}&checkout=${encodeURIComponent(checkout)}&adults=${encodeURIComponent(adults)}&rooms=${encodeURIComponent(rooms)}`)
-    .then(r => r.json())
-    .then(data => {
-      btn.disabled = false;
-      btn.textContent = "Search";
-      renderResults(data, checkin, checkout);
-    })
-    .catch(err => {
-      btn.disabled = false;
-      btn.textContent = "Search";
-      document.getElementById("resultsWrap").innerHTML = `<div class="error-box">Error: ${clean(err)}</div>`;
-    });
-}
-
-function renderResults(data, checkin, checkout) {
-  if (data.error) {
-    document.getElementById("resultsWrap").innerHTML = `<div class="error-box">API Error: ${clean(JSON.stringify(data.error))}</div>`;
-    return;
-  }
-
+function renderMdesResults(data, checkin, checkout) {
+  const wrap = document.getElementById('resultsWrap');
+  if (data.error) { wrap.innerHTML = `<div class="error-box">API Error: ${clean(JSON.stringify(data.error))}</div>`; return; }
   const hotels = data.hotels || [];
   const avail = hotels.filter(h => h.available);
-  const wrap = document.getElementById("resultsWrap");
-
-  if (!hotels.length) {
-    wrap.innerHTML = `<div class="empty-state">${clean(data.message || "No hotels found.")}</div>`;
-    return;
-  }
+  if (!hotels.length) { wrap.innerHTML = `<div class="empty-state">${clean(data.message || "No hotels found.")}</div>`; return; }
 
   const nights = Math.max(1, Math.round((new Date(checkout) - new Date(checkin)) / 86400000));
-  currentHotels = hotels;
-  currentNights = nights;
+  currentHotels = hotels; currentNights = nights;
 
   let html = `
     <div class="results-header">
-      <div>
-        <h3>Available stays</h3>
-        <p>${avail.length} with availability for ${nights} night${nights !== 1 ? "s" : ""}</p>
-      </div>
-      <span class="count-badge">${hotels.length} hotels found</span>
+      <div><h3>MDES results</h3><p>${avail.length} with availability for ${nights} night${nights !== 1 ? "s" : ""}</p></div>
+      <span class="count-badge">${hotels.length} hotels · Amadeus MDES</span>
     </div>
     <div class="hotel-grid">`;
 
@@ -1003,12 +713,12 @@ function renderResults(data, checkin, checkout) {
     const badgeText = h.available ? "Available" : "No availability";
     const location = friendlyAddress(h);
     const mapUrl = h.latitude ? `https://maps.google.com/?q=${encodeURIComponent(h.latitude)},${encodeURIComponent(h.longitude || "")}` : "";
-    const fallbackImage = fallbackImageFor(h);
+    const fallback = fallbackImageFor(h);
 
     html += `
       <article class="hotel-card">
         <div class="photo-wrap">
-          <div class="photo-fallback" style="--hotel-fallback-image: url('${attr(fallbackImage)}')"><strong>${clean(h.name || "Hotel")}</strong></div>
+          <div class="photo-fallback" style="--hotel-fallback-image: url('${attr(fallback)}')"><strong>${clean(h.name || "Hotel")}</strong></div>
           <img class="hotel-photo" src="/api/hotel-image/${attr(h.hotelId)}" alt="${attr(h.name)}" loading="lazy" onerror="this.classList.add('is-hidden')">
           <span class="status-pill ${badgeClass}">${badgeText}</span>
         </div>
@@ -1030,89 +740,65 @@ function renderResults(data, checkin, checkout) {
     if (h.available && h.offers.length) {
       const selected = h.offers[0];
       html += `
-          <div class="offers-wrap">
-            <div class="offers-head">
-              <div class="offers-title">Room offers</div>
-              <span class="count-badge">${h.offers.length} rates</span>
-            </div>
-            ${ratePickerHtml(h, selected)}
-            <div id="selected-offer-${attr(h.hotelId)}">${offerSummaryHtml(h.hotelId, h.name, selected, nights)}</div>
-          </div>`;
+        <div class="offers-wrap">
+          <div class="offers-head"><div class="offers-title">Room offers</div><span class="count-badge">${h.offers.length} rates</span></div>
+          ${ratePickerHtml(h, selected)}
+          <div id="selected-offer-${attr(h.hotelId)}">${offerSummaryHtml(h.hotelId, h.name, selected, nights)}</div>
+        </div>`;
     } else if (!h.available) {
       html += `<div class="offers-wrap"><p class="no-avail-label">No room availability for the selected dates.</p></div>`;
     }
-
-    html += `
-        </div>
-      </article>`;
+    html += `</div></article>`;
   }
-
   html += `</div>`;
   wrap.innerHTML = html;
 }
 
 function offerMeta(o) {
-  const refundable = o.refundable || "";
-  const refundKey = refundable.includes("NON") ? "NO" : refundable.includes("DEADLINE") ? "PARTIAL" : "YES";
-  const refundLabel = refundKey === "NO" ? "Non-refundable" : refundKey === "PARTIAL" ? "Refundable by deadline" : "Refundable";
+  const r = o.refundable || "";
+  const key = r.includes("NON") ? "NO" : r.includes("DEADLINE") ? "PARTIAL" : "YES";
+  const label = key === "NO" ? "Non-refundable" : key === "PARTIAL" ? "Refundable by deadline" : "Refundable";
   const board = o.boardType || "ROOM_ONLY";
-  return { refundKey, refundLabel, board, boardLabel: board.replace(/_/g, " ") };
+  return { refundKey: key, refundLabel: label, board, boardLabel: board.replace(/_/g, " ") };
 }
-
-function offerPriceLabel(o) {
-  return `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
-}
-
-function perNightLabel(o) {
-  return `${o.currency || ""} ${o.avgPerNight || "?"}`.trim();
-}
+function offerPriceLabel(o) { return `${o.currency || ""} ${o.totalPrice || "?"}`.trim(); }
+function perNightLabel(o) { return `${o.currency || ""} ${o.avgPerNight || "?"}`.trim(); }
 
 function ratePickerHtml(hotel, selected) {
-  const selectedMeta = offerMeta(selected);
+  const m = offerMeta(selected);
   return `
     <div class="rate-picker" id="rate-picker-${attr(hotel.hotelId)}">
       <button class="rate-trigger" type="button" data-hotel-id="${attr(hotel.hotelId)}" onclick="toggleRatePicker(event, this.dataset.hotelId)">
         <span class="rate-title">${clean(roomTitleFor(selected))}</span>
-        <span class="rate-sub">${clean(selectedMeta.boardLabel)} · ${clean(selectedMeta.refundLabel)} · ${clean(offerPriceLabel(selected))} total</span>
+        <span class="rate-sub">${clean(m.boardLabel)} · ${clean(m.refundLabel)} · ${clean(offerPriceLabel(selected))} total</span>
       </button>
-      <div class="rate-menu">
-        ${hotel.offers.map((offer, idx) => rateOptionHtml(hotel.hotelId, offer, idx)).join("")}
-      </div>
+      <div class="rate-menu">${hotel.offers.map((offer, idx) => rateOptionHtml(hotel.hotelId, offer, idx)).join("")}</div>
     </div>`;
 }
-
 function rateOptionHtml(hotelId, offer, idx) {
-  const meta = offerMeta(offer);
+  const m = offerMeta(offer);
   return `
     <button class="rate-option ${idx === 0 ? "is-selected" : ""}" type="button" data-hotel-id="${attr(hotelId)}" data-offer-index="${idx}" onclick="selectRateOption(event, this)">
-      <span>
-        <span class="rate-option-title">${clean(roomTitleFor(offer))}</span>
-        <span class="rate-option-meta">${clean(meta.boardLabel)} · ${clean(meta.refundLabel)}</span>
-      </span>
+      <span><span class="rate-option-title">${clean(roomTitleFor(offer))}</span><span class="rate-option-meta">${clean(m.boardLabel)} · ${clean(m.refundLabel)}</span></span>
       <span class="rate-option-price">${clean(offerPriceLabel(offer))}<small>${clean(perNightLabel(offer))}/night</small></span>
     </button>`;
 }
-
 function offerSummaryHtml(hotelId, hotelName, o, nights) {
-  const meta = offerMeta(o);
-  const roomTitle = roomTitleFor(o);
-  const totalPrice = `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
-  const nightPrice = perNightLabel(o);
-
+  const m = offerMeta(o);
+  const total = `${o.currency || ""} ${o.totalPrice || "?"}`.trim();
   return `
     <div class="offer-row" data-offer-id="${attr(o.offerId)}" data-hotel-name="${attr(hotelName)}" onclick="showDetailFromElement(this)">
       <div>
-        <div class="offer-room-type">${clean(roomTitle)}</div>
+        <div class="offer-room-type">${clean(roomTitleFor(o))}</div>
         <div class="chips">
-          <span class="chip board-pill">${clean(meta.boardLabel)}</span>
-          <span class="chip refund-${meta.refundKey}">${clean(meta.refundLabel)}</span>
-          ${o.paymentType ? `<span class="chip board-pill">${clean(o.paymentType)}</span>` : ""}
+          <span class="chip board-pill">${clean(m.boardLabel)}</span>
+          <span class="chip refund-${m.refundKey}">${clean(m.refundLabel)}</span>
         </div>
       </div>
       <div class="price-block">
-        <div class="price">${clean(totalPrice)}</div>
+        <div class="price">${clean(total)}</div>
         <small>Total for ${nights} night${nights !== 1 ? "s" : ""}</small>
-        <small>${clean(nightPrice)} avg/night</small>
+        <small>${clean(perNightLabel(o))} avg/night</small>
       </div>
       <button class="btn-detail" data-offer-id="${attr(o.offerId)}" data-hotel-name="${attr(hotelName)}" onclick="event.stopPropagation();showDetailFromElement(this)">Details</button>
     </div>`;
@@ -1122,101 +808,330 @@ function toggleRatePicker(event, hotelId) {
   event.stopPropagation();
   const picker = document.getElementById(`rate-picker-${hotelId}`);
   if (!picker) return;
-  const shouldOpen = !picker.classList.contains("open");
-  document.querySelectorAll(".rate-picker.open").forEach(node => node.classList.remove("open"));
-  if (shouldOpen) picker.classList.add("open");
+  const open = !picker.classList.contains("open");
+  document.querySelectorAll(".rate-picker.open").forEach(n => n.classList.remove("open"));
+  if (open) picker.classList.add("open");
 }
-
-function selectRateOption(event, el) {
-  event.stopPropagation();
-  updateSelectedOffer(el.dataset.hotelId, Number(el.dataset.offerIndex));
-}
-
-function updateSelectedOffer(hotelId, offerIndex = 0) {
+function selectRateOption(event, el) { event.stopPropagation(); updateSelectedOffer(el.dataset.hotelId, Number(el.dataset.offerIndex)); }
+function updateSelectedOffer(hotelId, idx = 0) {
   const hotel = currentHotels.find(h => h.hotelId === hotelId);
   const target = document.getElementById(`selected-offer-${hotelId}`);
   const picker = document.getElementById(`rate-picker-${hotelId}`);
   if (!hotel || !target || !picker) return;
-  const selected = hotel.offers[offerIndex] || hotel.offers[0];
+  const selected = hotel.offers[idx] || hotel.offers[0];
   target.innerHTML = offerSummaryHtml(hotelId, hotel.name, selected, currentNights || 1);
-  const triggerTitle = picker.querySelector(".rate-title");
-  const triggerSub = picker.querySelector(".rate-sub");
-  const selectedMeta = offerMeta(selected);
-  if (triggerTitle) triggerTitle.textContent = roomTitleFor(selected);
-  if (triggerSub) triggerSub.textContent = `${selectedMeta.boardLabel} · ${selectedMeta.refundLabel} · ${offerPriceLabel(selected)} total`;
-  picker.querySelectorAll(".rate-option").forEach((option, idx) => {
-    option.classList.toggle("is-selected", idx === offerIndex);
-  });
+  const m = offerMeta(selected);
+  picker.querySelector(".rate-title").textContent = roomTitleFor(selected);
+  picker.querySelector(".rate-sub").textContent = `${m.boardLabel} · ${m.refundLabel} · ${offerPriceLabel(selected)} total`;
+  picker.querySelectorAll(".rate-option").forEach((o, i) => o.classList.toggle("is-selected", i === idx));
   picker.classList.remove("open");
 }
 
-function showDetailFromElement(el) {
-  showDetail(el.dataset.offerId, el.dataset.hotelName);
-}
+function showDetailFromElement(el) { showMdesDetail(el.dataset.offerId, el.dataset.hotelName); }
 
-function showDetail(offerId, hotelName) {
-  const content = document.getElementById("modalContent");
+function showMdesDetail(offerId, hotelName) {
+  const content = document.getElementById('modalContent');
   content.innerHTML = `<div class="spinner" style="margin:30px auto"></div>`;
-  document.getElementById("modalBackdrop").classList.add("open");
+  document.getElementById('modalBackdrop').classList.add('open');
 
   fetch(`/api/offer-detail/${encodeURIComponent(offerId)}`)
     .then(r => r.json())
     .then(data => {
       let html = `<h3>${clean(hotelName)}</h3>`;
-
       if (data.images && data.images.length) {
         html += `<div class="image-gallery">${data.images.slice(0, 6).map(img => `<img src="${attr(img.url)}" alt="${attr(hotelName)}" loading="lazy">`).join("")}</div>`;
       }
-
       if (data.description) {
-        html += `<div class="section-label">Room description</div>
-                 <div class="desc-text">${clean(data.description).replace(/\n/g, "<br>")}</div>`;
+        html += `<div class="section-label">Room description</div><div class="desc-text">${clean(data.description).replace(/\n/g, "<br>")}</div>`;
       }
-
       if (data.amenities && data.amenities.length) {
-        html += `<div class="section-label">Amenities</div>`;
-        html += data.amenities.map(a => `<span class="amenity-tag">${clean(a).replace(/_/g, " ")}</span>`).join("");
+        html += `<div class="section-label">Amenities</div>${data.amenities.map(a => `<span class="amenity-tag">${clean(a).replace(/_/g, " ")}</span>`).join("")}`;
       }
-
       if (data.taxes && data.taxes.length) {
-        html += `<div class="section-label">Tax breakdown</div>
-          <table class="tax-table">
-            <tr><th>Tax type</th><th>Amount</th><th>Currency</th><th>Included?</th></tr>`;
+        html += `<div class="section-label">Tax breakdown</div><table class="tax-table"><tr><th>Tax type</th><th>Amount</th><th>Currency</th><th>Included?</th></tr>`;
         for (const t of data.taxes) {
-          html += `<tr>
-            <td>${clean(t.code || "MISC").replace(/_/g, " ")}</td>
-            <td>${clean(t.amount || "-")}</td>
-            <td>${clean(t.currency || "-")}</td>
-            <td class="${t.included ? "inc-yes" : "inc-no"}">${t.included ? "Yes" : "Extra"}</td>
-          </tr>`;
+          html += `<tr><td>${clean(t.code || "MISC").replace(/_/g, " ")}</td><td>${clean(t.amount || "-")}</td><td>${clean(t.currency || "-")}</td><td class="${t.included ? "inc-yes" : "inc-no"}">${t.included ? "Yes" : "Extra"}</td></tr>`;
         }
         html += `</table>`;
       } else {
         html += `<div class="section-label">Taxes</div><p class="desc-text">No tax detail on this rate.</p>`;
       }
-
-      if (data.address && Object.keys(data.address).length) {
-        const a = data.address;
-        html += `<div class="section-label">Full address</div>
-          <p class="desc-text">${clean((a.lines || []).join(", "))} ${clean(a.cityName || "")} ${clean(a.stateCode || "")} ${clean(a.countryCode || "")} ${clean(a.postalCode || "")}</p>`;
-      }
-
       content.innerHTML = html;
     })
-    .catch(err => {
-      content.innerHTML = `<div class="error-box">Could not load details: ${clean(err)}</div>`;
-    });
+    .catch(err => { content.innerHTML = `<div class="error-box">Could not load details: ${clean(err)}</div>`; });
 }
 
-function closeModal(e) {
-  if (e.target === document.getElementById("modalBackdrop")) {
-    document.getElementById("modalBackdrop").classList.remove("open");
+/* ====================================================================
+   TBO search (uses /api/tbo/*)
+==================================================================== */
+function tboEsc(s) { return clean(s); }
+function tboStarsFor(r) { if (typeof r === 'number') return r; return { OneStar:1, TwoStar:2, ThreeStar:3, FourStar:4, FiveStar:5 }[r] || 0; }
+function tboStars(n) { let h = ''; for (let i = 1; i <= 5; i++) h += `<span class="s${i>n?' e':''}">★</span>`; return h; }
+
+async function loadTboCountries() {
+  const sel = document.getElementById('tboCountry');
+  try {
+    const res = await fetch('/api/tbo/countries');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const list = (data.CountryList || []).sort((a, b) => a.Name.localeCompare(b.Name));
+    sel.innerHTML = '<option value="">— Select country —</option>' +
+      list.map(c => `<option value="${tboEsc(c.Code)}">${tboEsc(c.Name)}</option>`).join('');
+    sel.dataset.loaded = '1';
+  } catch (e) {
+    sel.innerHTML = '<option value="">Failed to load countries</option>';
+    document.getElementById('resultsWrap').innerHTML = `<div class="error-box">TBO error: ${clean(e.message || e)}</div>`;
   }
 }
 
-document.addEventListener("click", () => {
-  document.querySelectorAll(".rate-picker.open").forEach(node => node.classList.remove("open"));
-});
+async function onTboCountryChange() {
+  const code = document.getElementById('tboCountry').value;
+  const cityEl = document.getElementById('tboCity');
+  document.getElementById('tboSearchBtn').disabled = true;
+  cityEl.disabled = true; cityEl.innerHTML = '<option value="">Loading cities…</option>';
+  if (!code) { cityEl.innerHTML = '<option value="">Select country first</option>'; return; }
+  try {
+    const res = await fetch('/api/tbo/cities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ CountryCode: code }) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const list = (data.CityList || []).sort((a, b) => a.Name.localeCompare(b.Name));
+    cityEl.innerHTML = '<option value="">— Select city —</option>' + list.map(c => `<option value="${tboEsc(c.Code)}">${tboEsc(c.Name)}</option>`).join('');
+    cityEl.disabled = false;
+  } catch (e) {
+    cityEl.innerHTML = '<option value="">Error loading cities</option>';
+  }
+}
+
+function onTboCityChange() {
+  document.getElementById('tboSearchBtn').disabled = !document.getElementById('tboCity').value;
+}
+
+async function doTboSearch() {
+  const cityCode = document.getElementById('tboCity').value;
+  if (!cityCode) return;
+  const cityName = document.getElementById('tboCity').selectedOptions[0].text;
+  const countryName = document.getElementById('tboCountry').selectedOptions[0].text;
+  const btn = document.getElementById('tboSearchBtn');
+  btn.disabled = true;
+
+  document.getElementById('resultsWrap').innerHTML = `
+    <div class="loader-wrap"><div class="spinner tbo"></div><p>Loading TBO hotels in ${clean(cityName)}…</p></div>`;
+
+  try {
+    const res = await fetch('/api/tbo/hotels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ CityCode: cityCode }) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    tboHotels = data.Hotels || [];
+    tboFiltered = tboHotels;
+    tboPage = 1;
+    renderTboResults(cityName, countryName);
+  } catch (e) {
+    document.getElementById('resultsWrap').innerHTML = `<div class="error-box">TBO search failed: ${clean(e.message || e)}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderTboResults(cityName, countryName) {
+  const wrap = document.getElementById('resultsWrap');
+  if (!tboHotels.length) { wrap.innerHTML = `<div class="empty-state">No TBO hotels found in ${clean(cityName)}.</div>`; return; }
+  wrap.innerHTML = `
+    <div class="results-header">
+      <div><h3>TBO results · ${clean(cityName)}</h3><p>${tboHotels.length} properties · ${clean(countryName)}</p></div>
+      <span class="count-badge tbo">${tboHotels.length} hotels · TBO</span>
+    </div>
+    <div class="filter-row">
+      <input class="filter-input" type="text" placeholder="Filter by name…" oninput="filterTbo(this.value)" />
+      <span class="hint" id="tboFilterCount"></span>
+    </div>
+    <div class="tbo-grid" id="tboGrid"></div>
+    <div class="pagination" id="tboPagination"></div>`;
+  renderTboPage();
+}
+
+function filterTbo(query) {
+  const q = (query || '').toLowerCase();
+  tboFiltered = q ? tboHotels.filter(h => (h.HotelName || '').toLowerCase().includes(q)) : tboHotels;
+  tboPage = 1;
+  renderTboPage();
+  document.getElementById('tboFilterCount').textContent = q ? `${tboFiltered.length} matched` : '';
+}
+
+function renderTboPage() {
+  const start = (tboPage - 1) * TBO_PAGE_SIZE;
+  const page = tboFiltered.slice(start, start + TBO_PAGE_SIZE);
+  const grid = document.getElementById('tboGrid');
+  if (!tboFiltered.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">No hotels match this filter.</div>`; document.getElementById('tboPagination').innerHTML = ''; return; }
+
+  grid.innerHTML = page.map(h => {
+    const s = tboStarsFor(h.HotelRating);
+    const cached = tboImageCache[h.HotelCode];
+    const imgHtml = cached
+      ? `<img src="${attr(cached)}" alt="${attr(h.HotelName)}" />`
+      : `<div class="tbo-placeholder skeleton" id="tbo-ph-${attr(h.HotelCode)}">🏨</div>`;
+    return `
+      <div class="tbo-card" data-code="${attr(String(h.HotelCode))}" data-name="${attr(h.HotelName)}" onclick="openTboHotel(this.dataset.code, this.dataset.name)">
+        <div class="tbo-img">${imgHtml}</div>
+        <div class="tbo-body">
+          <div class="tbo-stars">${tboStars(s)}</div>
+          <div class="tbo-name">${clean(h.HotelName || '—')}</div>
+          <div class="tbo-addr">${clean(h.Address || '')}</div>
+          <div class="tbo-foot"><span class="tbo-city">${clean(h.CityName || '')}</span><span class="tbo-view">View →</span></div>
+        </div>
+      </div>`;
+  }).join('');
+  renderTboPagination();
+  setupTboImageObserver(page);
+}
+
+function renderTboPagination() {
+  const total = Math.ceil(tboFiltered.length / TBO_PAGE_SIZE);
+  const p = document.getElementById('tboPagination');
+  if (total <= 1) { p.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goTboPage(${tboPage - 1})" ${tboPage === 1 ? 'disabled' : ''}>‹</button>`;
+  pageRange(tboPage, total).forEach(r => {
+    if (r === '…') html += `<span class="page-ellipsis">…</span>`;
+    else html += `<button class="page-btn${r === tboPage ? ' active' : ''}" onclick="goTboPage(${r})">${r}</button>`;
+  });
+  html += `<button class="page-btn" onclick="goTboPage(${tboPage + 1})" ${tboPage === total ? 'disabled' : ''}>›</button>`;
+  p.innerHTML = html;
+}
+
+function pageRange(cur, total) {
+  const pages = [], d = 2;
+  let prev = null;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= cur - d && i <= cur + d)) {
+      if (prev && i - prev > 1) pages.push('…');
+      pages.push(i); prev = i;
+    }
+  }
+  return pages;
+}
+
+function goTboPage(n) {
+  const total = Math.ceil(tboFiltered.length / TBO_PAGE_SIZE);
+  if (n < 1 || n > total) return;
+  tboPage = n;
+  renderTboPage();
+  document.querySelector('main.shell').scrollIntoView({ behavior: 'smooth' });
+}
+
+function setupTboImageObserver(page) {
+  if (tboObserver) tboObserver.disconnect();
+  tboObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const code = el.dataset.imgcode;
+      if (!code || tboImageCache[code] !== undefined) return;
+      tboImageCache[code] = null;
+      tboObserver.unobserve(el);
+      tboFetchQueue.push(code);
+      drainTboQueue();
+    });
+  }, { rootMargin: '120px' });
+
+  page.forEach(h => {
+    if (tboImageCache[h.HotelCode] !== undefined) return;
+    const ph = document.getElementById('tbo-ph-' + h.HotelCode);
+    if (ph) { ph.dataset.imgcode = h.HotelCode; tboObserver.observe(ph); }
+  });
+}
+
+function drainTboQueue() {
+  while (tboActiveFetches < TBO_MAX_CONCURRENT && tboFetchQueue.length > 0) {
+    const code = tboFetchQueue.shift();
+    tboActiveFetches++;
+    fetchTboImage(code).finally(() => { tboActiveFetches--; drainTboQueue(); });
+  }
+}
+
+async function fetchTboImage(code) {
+  try {
+    const res = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: code, Language: 'EN' }) });
+    const data = await res.json();
+    const h = (data.HotelDetails || [])[0];
+    if (!h) return;
+    const url = h.Image || (h.Images || [])[0] || null;
+    tboImageCache[code] = url || '';
+    if (url) updateTboCardImage(code, url);
+  } catch (e) { tboImageCache[code] = ''; }
+}
+
+function updateTboCardImage(code, url) {
+  const ph = document.getElementById('tbo-ph-' + code);
+  if (!ph) return;
+  const img = document.createElement('img');
+  img.src = url; img.alt = '';
+  img.style.opacity = '0'; img.style.transition = 'opacity 0.3s';
+  img.onload = () => { img.style.opacity = '1'; ph.replaceWith(img); };
+  img.onerror = () => {};
+}
+
+async function openTboHotel(code, name) {
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `<div class="spinner tbo" style="margin:30px auto"></div>`;
+  document.getElementById('modalBackdrop').classList.add('open');
+
+  try {
+    const res = await fetch('/api/tbo/hotel-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Hotelcodes: code, Language: 'EN' }) });
+    const data = await res.json();
+    const h = (data.HotelDetails || [])[0];
+    if (!h) { content.innerHTML = `<div class="error-box">No detail returned for hotel ${clean(code)}.</div>`; return; }
+    renderTboDetail(h, name);
+    const url = h.Image || (h.Images || [])[0];
+    if (url && !tboImageCache[code]) { tboImageCache[code] = url; updateTboCardImage(code, url); }
+  } catch (e) {
+    content.innerHTML = `<div class="error-box">Failed to load hotel details: ${clean(e.message || e)}</div>`;
+  }
+}
+
+function renderTboDetail(h, fallbackName) {
+  const content = document.getElementById('modalContent');
+  const s = tboStarsFor(h.HotelRating);
+  const images = h.Images || (h.Image ? [h.Image] : []);
+  const facs = h.HotelFacilities || [];
+  const attractions = h.Attractions ? String(h.Attractions).split(',').map(x => x.trim()).filter(Boolean) : [];
+  let mapHref = '';
+  if (h.Map) {
+    const [lat, lng] = String(h.Map).split('|');
+    if (lat && lng) mapHref = `https://www.google.com/maps?q=${lat},${lng}`;
+  }
+
+  let html = `<h3>${clean(h.HotelName || fallbackName)} <span style="color:#F59E0B;font-size:0.9rem;margin-left:8px">${tboStars(s)}</span></h3>`;
+
+  if (images.length) {
+    html += `<div class="gallery-strip">${images.slice(0, 8).map(u => `<img src="${attr(u)}" alt="${attr(h.HotelName)}" loading="lazy">`).join('')}</div>`;
+  }
+
+  html += `<div class="info-grid">
+    <div class="info-cell"><div class="ic-label">Check-in</div><div class="ic-value">${clean(h.CheckInTime || '—')}</div></div>
+    <div class="info-cell"><div class="ic-label">Check-out</div><div class="ic-value">${clean(h.CheckOutTime || '—')}</div></div>
+    <div class="info-cell"><div class="ic-label">Phone</div><div class="ic-value">${clean(h.PhoneNumber || '—')}</div></div>
+    <div class="info-cell"><div class="ic-label">City</div><div class="ic-value">${clean([h.CityName, h.CountryName].filter(Boolean).join(', ') || '—')}</div></div>
+  </div>`;
+
+  if (h.Address) html += `<div class="section-label">Address</div><p class="desc-text">${clean(h.Address)}</p>`;
+
+  if (facs.length) {
+    html += `<div class="section-label">Facilities</div><div>${facs.map(f => `<span class="facility-tag">${clean(f)}</span>`).join('')}</div>`;
+  }
+  if (attractions.length) {
+    html += `<div class="section-label">Nearby attractions</div><div>${attractions.map(a => `<span class="facility-tag">${clean(a)}</span>`).join('')}</div>`;
+  }
+  if (h.Description) html += `<div class="section-label">About</div><div class="desc-text">${h.Description}</div>`;
+
+  const actions = [];
+  if (mapHref) actions.push(`<a href="${attr(mapHref)}" target="_blank" rel="noreferrer" class="amenity-tag">View on map</a>`);
+  if (h.HotelWebsiteUrl) actions.push(`<a href="${attr(h.HotelWebsiteUrl)}" target="_blank" rel="noreferrer" class="amenity-tag">Hotel website</a>`);
+  if (actions.length) html += `<div style="margin-top:14px">${actions.join(' ')}</div>`;
+
+  content.innerHTML = html;
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modalBackdrop')) document.getElementById('modalBackdrop').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('modalBackdrop').classList.remove('open'); });
 </script>
 </body>
 </html>

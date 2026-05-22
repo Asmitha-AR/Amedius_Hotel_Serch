@@ -25,6 +25,71 @@ SOAP_ENDPOINT     = os.environ.get(
     f"https://nodeD3.production.webservices.amadeus.com/{SOAP_ACCESS_POINT}",
 )
 
+TBO_BASE_URL  = os.environ.get("TBO_BASE_URL", "https://apiwr.tboholidays.com/HotelAPI")
+TBO_USERNAME  = os.environ.get("TBO_USERNAME")
+TBO_PASSWORD  = os.environ.get("TBO_PASSWORD")
+
+AMADEUS_REST_BASE   = os.environ.get("AMADEUS_REST_BASE", "https://test.api.amadeus.com")
+AMADEUS_API_KEY     = os.environ.get("AMADEUS_API_KEY")
+AMADEUS_API_SECRET  = os.environ.get("AMADEUS_API_SECRET")
+_amadeus_rest_token = {"value": None, "expires_at": 0}
+
+IATA_CITY_INDEX = [
+    {"code": "DXB", "name": "Dubai", "country": "United Arab Emirates"},
+    {"code": "AUH", "name": "Abu Dhabi", "country": "United Arab Emirates"},
+    {"code": "DOH", "name": "Doha", "country": "Qatar"},
+    {"code": "RUH", "name": "Riyadh", "country": "Saudi Arabia"},
+    {"code": "JED", "name": "Jeddah", "country": "Saudi Arabia"},
+    {"code": "CAI", "name": "Cairo", "country": "Egypt"},
+    {"code": "IST", "name": "Istanbul", "country": "Turkey"},
+    {"code": "LHR", "name": "London", "country": "United Kingdom"},
+    {"code": "CDG", "name": "Paris", "country": "France"},
+    {"code": "BCN", "name": "Barcelona", "country": "Spain"},
+    {"code": "MAD", "name": "Madrid", "country": "Spain"},
+    {"code": "FCO", "name": "Rome", "country": "Italy"},
+    {"code": "MXP", "name": "Milan", "country": "Italy"},
+    {"code": "FRA", "name": "Frankfurt", "country": "Germany"},
+    {"code": "MUC", "name": "Munich", "country": "Germany"},
+    {"code": "BER", "name": "Berlin", "country": "Germany"},
+    {"code": "AMS", "name": "Amsterdam", "country": "Netherlands"},
+    {"code": "ZRH", "name": "Zurich", "country": "Switzerland"},
+    {"code": "VIE", "name": "Vienna", "country": "Austria"},
+    {"code": "ATH", "name": "Athens", "country": "Greece"},
+    {"code": "JFK", "name": "New York", "country": "United States"},
+    {"code": "LAX", "name": "Los Angeles", "country": "United States"},
+    {"code": "MIA", "name": "Miami", "country": "United States"},
+    {"code": "ORD", "name": "Chicago", "country": "United States"},
+    {"code": "SFO", "name": "San Francisco", "country": "United States"},
+    {"code": "LAS", "name": "Las Vegas", "country": "United States"},
+    {"code": "YYZ", "name": "Toronto", "country": "Canada"},
+    {"code": "YVR", "name": "Vancouver", "country": "Canada"},
+    {"code": "BOM", "name": "Mumbai", "country": "India"},
+    {"code": "DEL", "name": "New Delhi", "country": "India"},
+    {"code": "BLR", "name": "Bangalore", "country": "India"},
+    {"code": "MAA", "name": "Chennai", "country": "India"},
+    {"code": "CMB", "name": "Colombo", "country": "Sri Lanka"},
+    {"code": "SIN", "name": "Singapore", "country": "Singapore"},
+    {"code": "BKK", "name": "Bangkok", "country": "Thailand"},
+    {"code": "HKT", "name": "Phuket", "country": "Thailand"},
+    {"code": "KUL", "name": "Kuala Lumpur", "country": "Malaysia"},
+    {"code": "CGK", "name": "Jakarta", "country": "Indonesia"},
+    {"code": "DPS", "name": "Bali (Denpasar)", "country": "Indonesia"},
+    {"code": "HKG", "name": "Hong Kong", "country": "Hong Kong"},
+    {"code": "ICN", "name": "Seoul", "country": "South Korea"},
+    {"code": "NRT", "name": "Tokyo", "country": "Japan"},
+    {"code": "PEK", "name": "Beijing", "country": "China"},
+    {"code": "PVG", "name": "Shanghai", "country": "China"},
+    {"code": "SYD", "name": "Sydney", "country": "Australia"},
+    {"code": "MEL", "name": "Melbourne", "country": "Australia"},
+    {"code": "AKL", "name": "Auckland", "country": "New Zealand"},
+    {"code": "JNB", "name": "Johannesburg", "country": "South Africa"},
+    {"code": "CPT", "name": "Cape Town", "country": "South Africa"},
+    {"code": "NBO", "name": "Nairobi", "country": "Kenya"},
+    {"code": "GRU", "name": "Sao Paulo", "country": "Brazil"},
+    {"code": "MEX", "name": "Mexico City", "country": "Mexico"},
+]
+_last_hotel_name_index = {}
+
 AVAILABILITY_ACTION = "http://webservices.amadeus.com/Hotel_MultiSingleAvailability_10.0"
 PRICING_ACTION = "http://webservices.amadeus.com/Hotel_EnhancedPricing_2.0"
 CONTENT_ACTION = "http://webservices.amadeus.com/OTA_HotelDescriptiveInfoRQ_07.1_1A2007A"
@@ -142,13 +207,18 @@ def build_inseries_envelope(action, body_xml, soap_session):
 </soap:Envelope>"""
 
 
-def build_availability_body(city, checkin, checkout, adults, rooms=1):
+def build_availability_body(city, checkin, checkout, adults, rooms=1, hotel_code=""):
+    hotel_ref = (
+        f'<HotelRef HotelCode="{escape(hotel_code)}"/>'
+        if hotel_code
+        else f'<HotelRef HotelCityCode="{escape(city)}"/>'
+    )
     return f"""    <OTA_HotelAvailRQ EchoToken="WebsiteSearch" Version="4.000" PrimaryLangID="EN"
       SummaryOnly="true" RateRangeOnly="true" ExactMatchOnly="false" SearchCacheLevel="Live"
       RateDetailsInd="true" RequestedCurrency="AED">
       <AvailRequestSegments><AvailRequestSegment InfoSource="Distribution">
         <HotelSearchCriteria AvailableOnlyIndicator="true"><Criterion ExactMatch="true">
-          <HotelRef HotelCityCode="{escape(city)}"/>
+          {hotel_ref}
           <StayDateRange Start="{escape(checkin)}" End="{escape(checkout)}"/>
           <RoomStayCandidates><RoomStayCandidate Quantity="{int(rooms)}"><GuestCounts IsPerRoom="true">
             <GuestCount AgeQualifyingCode="10" Count="{int(adults)}"/>
@@ -274,13 +344,13 @@ def get_hotel_images(hotel_code):
         _hotel_image_cache[hotel_code] = []
     return _hotel_image_cache[hotel_code]
 
-def call_hotel_availability(city, checkin, checkout, adults, rooms=1):
+def call_hotel_availability(city, checkin, checkout, adults, rooms=1, hotel_code=""):
     require_soap_config()
     print(
-        f"SOAP search request: city={city}, checkin={checkin}, checkout={checkout}, adults={adults}, rooms={rooms}",
+        f"SOAP search request: city={city}, hotel_code={hotel_code or '-'}, checkin={checkin}, checkout={checkout}, adults={adults}, rooms={rooms}",
         flush=True,
     )
-    envelope = build_start_envelope(AVAILABILITY_ACTION, build_availability_body(city, checkin, checkout, adults, rooms))
+    envelope = build_start_envelope(AVAILABILITY_ACTION, build_availability_body(city, checkin, checkout, adults, rooms, hotel_code))
     session = requests.Session()
     session.trust_env = False
     response = session.post(
@@ -605,24 +675,314 @@ def call_enhanced_pricing(offer_id):
     return cached
 
 
+def tbo_request(method, endpoint, payload=None):
+    if not TBO_USERNAME or not TBO_PASSWORD:
+        raise RuntimeError("Set TBO_USERNAME and TBO_PASSWORD in .env before calling TBO APIs.")
+    url = f"{TBO_BASE_URL.rstrip('/')}/{endpoint}"
+    session = requests.Session()
+    session.trust_env = False
+    auth = (TBO_USERNAME, TBO_PASSWORD)
+    if method == "GET":
+        response = session.get(url, auth=auth, timeout=45)
+    else:
+        response = session.post(url, json=payload or {}, auth=auth, timeout=45)
+    response.raise_for_status()
+    return response.json()
+
+
+def amadeus_rest_token():
+    import time as _time
+    now = _time.time()
+    if _amadeus_rest_token["value"] and now < _amadeus_rest_token["expires_at"] - 30:
+        return _amadeus_rest_token["value"]
+    if not AMADEUS_API_KEY or not AMADEUS_API_SECRET:
+        raise RuntimeError("Set AMADEUS_API_KEY and AMADEUS_API_SECRET in .env for Amadeus REST autocomplete.")
+    session = requests.Session()
+    session.trust_env = False
+    response = session.post(
+        f"{AMADEUS_REST_BASE.rstrip('/')}/v1/security/oauth2/token",
+        data={"grant_type": "client_credentials", "client_id": AMADEUS_API_KEY, "client_secret": AMADEUS_API_SECRET},
+        timeout=15,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    _amadeus_rest_token["value"] = payload.get("access_token")
+    _amadeus_rest_token["expires_at"] = now + int(payload.get("expires_in", 1799))
+    return _amadeus_rest_token["value"]
+
+
+def _matches_keyword(value, keyword):
+    if not value or not keyword:
+        return False
+    value_low = value.lower()
+    keyword_low = keyword.lower().strip()
+    if keyword_low in value_low:
+        return True
+    tokens = [t for t in keyword_low.split() if t]
+    if len(tokens) > 1 and all(t in value_low for t in tokens):
+        return True
+    return False
+
+
+def amadeus_rest_cities(keyword, limit=8):
+    token = amadeus_rest_token()
+    session = requests.Session()
+    session.trust_env = False
+    response = session.get(
+        f"{AMADEUS_REST_BASE.rstrip('/')}/v1/reference-data/locations",
+        params={"subType": "CITY", "keyword": keyword, "page[limit]": limit},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=15,
+    )
+    if response.status_code >= 400:
+        return []
+    items = response.json().get("data") or []
+    out = []
+    for item in items:
+        code = item.get("iataCode") or (item.get("address") or {}).get("cityCode") or ""
+        name = item.get("name") or ""
+        country = (item.get("address") or {}).get("countryName") or item.get("subType") or ""
+        if not (_matches_keyword(name, keyword) or _matches_keyword(code, keyword) or _matches_keyword(country, keyword)):
+            continue
+        if code and name:
+            out.append({"code": code, "name": name.title(), "country": country.title() if country else ""})
+        if len(out) >= limit:
+            break
+    return out
+
+
+_hotels_by_city_cache = {}
+
+
+def amadeus_rest_hotels_by_city(city_code, hard_limit=300):
+    city_code = (city_code or "").upper()
+    if not city_code:
+        return []
+    if city_code in _hotels_by_city_cache:
+        return _hotels_by_city_cache[city_code]
+    try:
+        token = amadeus_rest_token()
+    except RuntimeError:
+        _hotels_by_city_cache[city_code] = []
+        return []
+    session = requests.Session()
+    session.trust_env = False
+    try:
+        response = session.get(
+            f"{AMADEUS_REST_BASE.rstrip('/')}/v1/reference-data/locations/hotels/by-city",
+            params={"cityCode": city_code},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        print(f"Amadeus by-city failed for {city_code}: {exc}", flush=True)
+        _hotels_by_city_cache[city_code] = []
+        return []
+    if response.status_code >= 400:
+        _hotels_by_city_cache[city_code] = []
+        return []
+    items = response.json().get("data") or []
+    out = []
+    for item in items:
+        name = item.get("name") or ""
+        hotel_id = item.get("hotelId") or ""
+        if name:
+            out.append({
+                "name": name.title(),
+                "hotelId": hotel_id,
+                "city": city_code,
+                "chainCode": item.get("chainCode") or "",
+            })
+        if len(out) >= hard_limit:
+            break
+    _hotels_by_city_cache[city_code] = out
+    return out
+
+
+def amadeus_rest_hotels(city_token_pairs, limit=8):
+    matches = []
+    for city_code, hotel_tokens in city_token_pairs:
+        for hotel in amadeus_rest_hotels_by_city(city_code):
+            name_low = hotel["name"].lower()
+            if all(token in name_low for token in hotel_tokens):
+                matches.append(hotel)
+            if len(matches) >= limit:
+                return matches
+    return matches
+
+
+def remember_hotel_names(city_code, hotels):
+    bucket = _last_hotel_name_index.setdefault(city_code.upper(), [])
+    seen = {entry["name"].lower() for entry in bucket}
+    for hotel in hotels or []:
+        name = (hotel.get("name") or "").strip()
+        if name and name.lower() not in seen:
+            bucket.append({"name": name, "hotelId": hotel.get("hotelId", "")})
+            seen.add(name.lower())
+    if len(bucket) > 200:
+        del bucket[200:]
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
+@app.route("/api/autocomplete")
+def autocomplete():
+    query = (request.args.get("q") or "").strip()
+    if not query:
+        return jsonify({"cities": [], "hotels": [], "source": "empty"})
+
+    amadeus_cities = []
+    if AMADEUS_API_KEY and AMADEUS_API_SECRET:
+        try:
+            amadeus_cities = amadeus_rest_cities(query)
+        except Exception as exc:
+            print(f"Amadeus city autocomplete failed: {exc}", flush=True)
+
+    tokens = [t for t in query.lower().split() if t]
+
+    local_cities = []
+    for entry in IATA_CITY_INDEX:
+        haystacks = (entry["name"].lower(), entry["code"].lower(), entry["country"].lower())
+        if any(_matches_keyword(h, token) for h in haystacks for token in tokens):
+            local_cities.append(entry)
+
+    city_token_pairs = []
+    seen_codes = set()
+    for entry in amadeus_cities + local_cities:
+        code = (entry.get("code") or "").upper()
+        if not code or code in seen_codes:
+            continue
+        seen_codes.add(code)
+        haystack = " ".join([entry.get("name", ""), entry.get("country", ""), code]).lower()
+        remaining = [t for t in tokens if t not in haystack]
+        if not remaining:
+            remaining = tokens
+        city_token_pairs.append((code, remaining))
+        if len(city_token_pairs) >= 3:
+            break
+
+    amadeus_hotels = []
+    if AMADEUS_API_KEY and AMADEUS_API_SECRET and city_token_pairs:
+        try:
+            amadeus_hotels = amadeus_rest_hotels(city_token_pairs)
+        except Exception as exc:
+            print(f"Amadeus hotel autocomplete failed: {exc}", flush=True)
+
+    if len(amadeus_hotels) < 8:
+        for city_code, bucket in _hotels_by_city_cache.items():
+            if city_code in seen_codes:
+                continue
+            for hotel in bucket:
+                if _matches_keyword(hotel["name"], query):
+                    amadeus_hotels.append(hotel)
+                if len(amadeus_hotels) >= 8:
+                    break
+            if len(amadeus_hotels) >= 8:
+                break
+
+    local_hotels = []
+    for city_code, bucket in _last_hotel_name_index.items():
+        for hotel in bucket:
+            if _matches_keyword(hotel["name"], query):
+                local_hotels.append({
+                    "name": hotel["name"],
+                    "hotelId": hotel.get("hotelId", ""),
+                    "city": city_code,
+                })
+
+    cities, seen_city_codes = [], set()
+    for entry in amadeus_cities + local_cities:
+        code = (entry.get("code") or "").upper()
+        if code and code not in seen_city_codes:
+            seen_city_codes.add(code)
+            cities.append(entry)
+        if len(cities) >= 8:
+            break
+
+    hotels, seen_hotel_keys = [], set()
+    for entry in amadeus_hotels + local_hotels:
+        key = (entry.get("hotelId") or entry.get("name") or "").lower()
+        if key and key not in seen_hotel_keys:
+            seen_hotel_keys.add(key)
+            hotels.append(entry)
+        if len(hotels) >= 8:
+            break
+
+    if amadeus_cities or amadeus_hotels:
+        source = "amadeus"
+    elif AMADEUS_API_KEY:
+        source = "amadeus-empty+local"
+    else:
+        source = "local"
+    return jsonify({"cities": cities, "hotels": hotels, "source": source})
+
+
 @app.route("/api/search-hotels")
 def search_hotels():
-    city      = request.args.get("city", "DXB").upper()
-    checkin   = request.args.get("checkin")
-    checkout  = request.args.get("checkout")
-    adults    = request.args.get("adults", 2)
-    rooms     = request.args.get("rooms", 1)
+    city       = request.args.get("city", "DXB").upper()
+    checkin    = request.args.get("checkin")
+    checkout   = request.args.get("checkout")
+    adults     = request.args.get("adults", 2)
+    rooms      = request.args.get("rooms", 1)
+    hotel_code = (request.args.get("hotel_code") or "").strip().upper()
     try:
-        data, status = call_hotel_availability(city, checkin, checkout, adults, rooms)
+        data, status = call_hotel_availability(city, checkin, checkout, adults, rooms, hotel_code)
     except RuntimeError as exc:
         return jsonify({"error": str(exc)}), 400
     except requests.RequestException as exc:
         return jsonify({"error": f"SOAP request failed: {exc}"}), 502
+    if status == 200 and isinstance(data, dict):
+        remember_hotel_names(city, data.get("hotels", []))
     return jsonify(data), status
+
+
+@app.route("/api/tbo/countries")
+def tbo_countries():
+    try:
+        return jsonify(tbo_request("GET", "CountryList"))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except requests.RequestException as exc:
+        return jsonify({"error": f"TBO request failed: {exc}"}), 502
+
+
+@app.route("/api/tbo/cities", methods=["POST"])
+def tbo_cities():
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify(tbo_request("POST", "CityList", {"CountryCode": body.get("CountryCode")}))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except requests.RequestException as exc:
+        return jsonify({"error": f"TBO request failed: {exc}"}), 502
+
+
+@app.route("/api/tbo/hotels", methods=["POST"])
+def tbo_hotels():
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify(tbo_request("POST", "TBOHotelCodeList", {"CityCode": body.get("CityCode")}))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except requests.RequestException as exc:
+        return jsonify({"error": f"TBO request failed: {exc}"}), 502
+
+
+@app.route("/api/tbo/hotel-details", methods=["POST"])
+def tbo_hotel_details():
+    body = request.get_json(silent=True) or {}
+    try:
+        return jsonify(tbo_request("POST", "HotelDetails", {
+            "Hotelcodes": str(body.get("Hotelcodes", "")),
+            "Language": body.get("Language") or "EN",
+        }))
+    except RuntimeError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except requests.RequestException as exc:
+        return jsonify({"error": f"TBO request failed: {exc}"}), 502
 
 @app.route("/api/hotel-images/<hotel_id>")
 def hotel_images(hotel_id):
