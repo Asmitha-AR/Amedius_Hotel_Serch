@@ -395,7 +395,31 @@
   .room-highlight .price-line { color: var(--navy); font-weight: 950; font-size: 1.25rem; margin-top: 8px; }
 
   .room-list { display: grid; gap: 10px; }
-  .room-list .offer-row { cursor: default; }
+  .room-list .offer-row { cursor: default; align-items: start; }
+  .room-extra { margin-top: 10px; display: grid; gap: 6px; font-size: 0.82rem; color: var(--muted); }
+  .room-extra .label { font-weight: 800; color: var(--ink); margin-right: 4px; }
+  .cancel-timeline { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cancel-step {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fff7ed; color: #92400e; border: 1px solid #fde0a2;
+    border-radius: 999px; padding: 3px 8px; font-size: 0.74rem; font-weight: 700;
+  }
+  .cancel-step.is-free { background: #ecfdf3; color: #065f46; border-color: #b9e6c9; }
+  .cancel-step.is-full { background: #fff1f0; color: #b42318; border-color: #ffd5d2; }
+  .day-rates { display: flex; flex-wrap: wrap; gap: 6px; }
+  .day-pill {
+    background: #f3f6fb; color: #5b6678; border: 1px solid var(--soft-line);
+    border-radius: 6px; padding: 3px 8px; font-size: 0.74rem; font-weight: 700;
+  }
+  .inclusion-tag {
+    display: inline-flex; margin: 2px; border-radius: 999px;
+    padding: 3px 9px; background: #edf4ff; color: #23406f;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .transfer-pill {
+    background: #ecfdf3; color: #065f46; border: 1px solid #b9e6c9;
+    border-radius: 999px; padding: 3px 8px; font-size: 0.72rem; font-weight: 800;
+  }
 
   .rooms-disclosure {
     margin-top: 18px;
@@ -1257,6 +1281,55 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
   wrap.innerHTML = html;
 }
 
+function parseTboDate(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{2})-(\d{2})-(\d{4})/);
+  if (!m) return null;
+  return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
+}
+
+function formatTboDateShort(s) {
+  const d = parseTboDate(s);
+  if (!d) return s || '';
+  return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function tboCancelTimelineHtml(policies, currency) {
+  if (!policies || !policies.length) return '';
+  const sorted = [...policies].sort((a, b) => (parseTboDate(a.FromDate) || 0) - (parseTboDate(b.FromDate) || 0));
+  return sorted.map(p => {
+    const charge = Number(p.CancellationCharge || 0);
+    const isFree = charge === 0;
+    const isFull = (p.ChargeType === 'Percentage' && charge >= 100);
+    const cls = isFree ? 'is-free' : (isFull ? 'is-full' : '');
+    const fee = p.ChargeType === 'Percentage' ? `${charge}%` : `${currency || ''} ${charge.toFixed(2)}`;
+    const label = isFree ? `Free until ${formatTboDateShort(p.FromDate)}` : `From ${formatTboDateShort(p.FromDate)}: ${fee}`;
+    return `<span class="cancel-step ${cls}">${clean(label)}</span>`;
+  }).join('');
+}
+
+function tboDayRatesHtml(dayRates, currency, checkin) {
+  if (!dayRates || !dayRates.length) return '';
+  const nights = (dayRates[0] || []).map(d => Number(d?.BasePrice ?? 0));
+  if (!nights.length) return '';
+  const start = checkin ? new Date(`${checkin}T00:00:00`) : null;
+  return nights.map((price, i) => {
+    let label = `Night ${i + 1}`;
+    if (start) {
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      label = d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
+    }
+    return `<span class="day-pill">${clean(label)} · ${clean(currency || '')} ${price.toFixed(2)}</span>`;
+  }).join('');
+}
+
+function tboInclusionsHtml(inclusion) {
+  if (!inclusion) return '';
+  const parts = String(inclusion).split(/[|,]/).map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return '';
+  return parts.map(p => `<span class="inclusion-tag">${clean(p)}</span>`).join('');
+}
+
 function tboRoomRowHtml(room, currency, hotelCode, roomIdx) {
   const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
   const meal = (room.MealType || '').replace(/_/g, ' ') || 'Room only';
@@ -1484,29 +1557,42 @@ function renderTboDetail(h, hotelCode, focusRoomIdx) {
     const name = Array.isArray(highlightedRoom.Name) ? highlightedRoom.Name.join(' · ') : (highlightedRoom.Name || 'Room');
     const meal = (highlightedRoom.MealType || '').replace(/_/g, ' ') || 'Room only';
     const refund = highlightedRoom.IsRefundable ? 'Refundable' : 'Non-refundable';
+    const inclusions = tboInclusionsHtml(highlightedRoom.Inclusion);
+    const cancelTl = tboCancelTimelineHtml(highlightedRoom.CancelPolicies, currency);
+    const dayRates = tboDayRatesHtml(highlightedRoom.DayRates, currency, document.getElementById('tboCheckin')?.value);
     html += `<div class="room-highlight tbo">
       <h4>Selected room: ${clean(name)}</h4>
-      <div class="room-line">${clean(meal)} · ${clean(refund)}${highlightedRoom.Inclusion ? ' · ' + clean(highlightedRoom.Inclusion.replace(/\|/g, ', ')) : ''}</div>
+      <div class="room-line">${clean(meal)} · ${clean(refund)}${highlightedRoom.WithTransfers ? ' · <span class="transfer-pill">Transfers included</span>' : ''}</div>
+      ${inclusions ? `<div class="room-extra"><div><span class="label">Inclusions:</span>${inclusions}</div></div>` : ''}
+      ${dayRates ? `<div class="room-extra"><div><span class="label">Per night:</span><span class="day-rates">${dayRates}</span></div></div>` : ''}
+      ${cancelTl ? `<div class="room-extra"><div><span class="label">Cancellation:</span><span class="cancel-timeline">${cancelTl}</span></div></div>` : ''}
       <div class="price-line">${clean(currency)} ${clean(String(highlightedRoom.TotalFare ?? '—'))} <small style="font-weight:600;color:var(--muted)">total · tax ${clean(String(highlightedRoom.TotalTax ?? '—'))}</small></div>
     </div>`;
   }
 
   if (rooms.length) {
     html += `<details class="rooms-disclosure"><summary>All room offers<span class="rooms-disclosure-count">${rooms.length} rates</span></summary><div class="room-list">`;
+    const checkin = document.getElementById('tboCheckin')?.value;
     rooms.forEach((room, idx) => {
       const isFocus = idx === focusRoomIdx;
       const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
       const meal = (room.MealType || '').replace(/_/g, ' ') || 'Room only';
       const refund = room.IsRefundable ? 'Refundable' : 'Non-refundable';
       const refundKey = room.IsRefundable ? 'YES' : 'NO';
+      const inclusions = tboInclusionsHtml(room.Inclusion);
+      const cancelTl = tboCancelTimelineHtml(room.CancelPolicies, currency);
+      const dayRates = tboDayRatesHtml(room.DayRates, currency, checkin);
       html += `<div class="offer-row" style="background:${isFocus ? '#e8f7ef' : '#fbfcfe'};border-color:${isFocus ? '#b9e3d2' : 'var(--line)'}">
         <div>
           <div class="offer-room-type">${clean(name)}</div>
           <div class="chips">
             <span class="chip board-pill">${clean(meal)}</span>
             <span class="chip refund-${refundKey}">${clean(refund)}</span>
-            ${room.Inclusion ? `<span class="chip board-pill">${clean(room.Inclusion.split('|').slice(0,2).join(', '))}</span>` : ''}
+            ${room.WithTransfers ? `<span class="chip refund-YES">Transfers</span>` : ''}
           </div>
+          ${inclusions ? `<div class="room-extra"><div><span class="label">Inclusions:</span>${inclusions}</div></div>` : ''}
+          ${dayRates ? `<div class="room-extra"><div><span class="label">Per night:</span><span class="day-rates">${dayRates}</span></div></div>` : ''}
+          ${cancelTl ? `<div class="room-extra"><div><span class="label">Cancellation:</span><span class="cancel-timeline">${cancelTl}</span></div></div>` : ''}
         </div>
         <div class="price-block">
           <div class="price">${clean(currency || '')} ${clean(String(room.TotalFare ?? '—'))}</div>
