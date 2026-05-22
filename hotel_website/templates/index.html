@@ -397,6 +397,45 @@
   .room-list { display: grid; gap: 10px; }
   .room-list .offer-row { cursor: default; }
 
+  .rooms-disclosure {
+    margin-top: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #fff;
+  }
+  .rooms-disclosure > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--ink);
+    background: #fbfcfe;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .rooms-disclosure > summary::-webkit-details-marker { display: none; }
+  .rooms-disclosure > summary::after {
+    content: "";
+    width: 9px; height: 9px;
+    border-right: 2px solid var(--muted);
+    border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg);
+    transition: transform 0.2s;
+  }
+  .rooms-disclosure[open] > summary::after { transform: rotate(-135deg); }
+  .rooms-disclosure[open] > summary { border-bottom: 1px solid var(--soft-line); }
+  .rooms-disclosure .room-list { padding: 12px; gap: 10px; }
+  .rooms-disclosure-count {
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.82rem;
+    margin-left: 8px;
+  }
+
   .filter-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .filter-input { width: 240px; height: 38px; border: 1px solid var(--line); border-radius: var(--radius); padding: 0 12px; outline: none; }
   .filter-input:focus { border-color: var(--green-soft); box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12); }
@@ -1177,6 +1216,11 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
     const fallback = fallbackImageFor({ hotelId: r.HotelCode, name: meta.HotelName || r.HotelCode });
     const imageCount = (meta.Images || []).length || (meta.Image ? 1 : 0);
     const image = meta.Image || (meta.Images || [])[0] || '';
+    let mapUrl = '';
+    if (meta.Map) {
+      const [lat, lng] = String(meta.Map).split('|');
+      if (lat && lng) mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+    }
     html += `
       <article class="hotel-card">
         <div class="photo-wrap" style="cursor:pointer" onclick="openTboHotelModal('${attr(r.HotelCode)}')">
@@ -1189,7 +1233,10 @@ async function renderTboAvailability(data, cityName, countryName, hotelCodes) {
           <div class="hotel-header" style="cursor:pointer" onclick="openTboHotelModal('${attr(r.HotelCode)}')">
             <h3 class="hotel-name">${clean(meta.HotelName || 'Hotel ' + r.HotelCode)}</h3>
             <div class="hotel-meta">
-              <div class="hotel-location"><span>${clean(meta.Address || '—')}</span></div>
+              <div class="hotel-location">
+                <span>${clean(meta.Address || '—')}</span>
+                ${mapUrl ? `<a class="map-link" href="${attr(mapUrl)}" target="_blank" rel="noreferrer" onclick="event.stopPropagation()">View map</a>` : ''}
+              </div>
               <div class="hotel-codes">
                 <span class="meta-chip">TBO code ${clean(r.HotelCode)}</span>
                 <span class="meta-chip">${clean(r.Currency || '')} from ${clean(String(lowest))}</span>
@@ -1445,7 +1492,7 @@ function renderTboDetail(h, hotelCode, focusRoomIdx) {
   }
 
   if (rooms.length) {
-    html += `<div class="section-label">All room offers (${rooms.length})</div><div class="room-list">`;
+    html += `<details class="rooms-disclosure"><summary>All room offers<span class="rooms-disclosure-count">${rooms.length} rates</span></summary><div class="room-list">`;
     rooms.forEach((room, idx) => {
       const isFocus = idx === focusRoomIdx;
       const name = Array.isArray(room.Name) ? room.Name.join(' · ') : (room.Name || 'Room');
@@ -1468,7 +1515,7 @@ function renderTboDetail(h, hotelCode, focusRoomIdx) {
         <span></span>
       </div>`;
     });
-    html += `</div>`;
+    html += `</div></details>`;
   }
 
   if (facs.length) {
