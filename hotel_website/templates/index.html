@@ -86,8 +86,28 @@
   .mode-btn .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
   .mode-btn.mdes .dot { background: var(--blue); }
   .mode-btn.tbo .dot { background: var(--green-soft); }
+  .mode-btn.cmp .dot { background: linear-gradient(90deg, var(--blue) 50%, var(--green-soft) 50%); border: 1px solid #cdd5e2; }
   .mode-btn.active { color: var(--ink); background: #eef3fb; }
   .mode-btn.tbo.active { background: #e8f7ef; }
+  .mode-btn.cmp.active { background: #f4ecff; }
+
+  .cmp-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  .cmp-table th, .cmp-table td { padding: 10px 12px; border-bottom: 1px solid var(--soft-line); font-size: 0.88rem; text-align: left; vertical-align: middle; }
+  .cmp-table th { background: #f8fafd; color: var(--muted); font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .cmp-table tr:hover td { background: #fbfcfe; }
+  .cmp-score { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 0.74rem; font-weight: 800; }
+  .cmp-score.hi { background: #e8f7ef; color: var(--green); }
+  .cmp-score.md { background: #fff7e6; color: var(--amber); }
+  .cmp-score.lo { background: #fde8e8; color: var(--red); }
+  .cmp-btn { padding: 6px 12px; border-radius: 6px; background: var(--ink); color: #fff; border: 0; cursor: pointer; font-weight: 700; font-size: 0.78rem; }
+  .cmp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .cmp-price-card { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-top: 10px; box-shadow: var(--shadow); }
+  .cmp-price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; }
+  .cmp-price-cell { padding: 12px 14px; border-radius: 6px; border: 1px solid var(--soft-line); background: #fbfcfe; }
+  .cmp-price-cell h4 { margin: 0 0 6px; font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .cmp-price-cell .price { font-size: 1.5rem; font-weight: 800; color: var(--ink); }
+  .cmp-price-cell .unavail { color: var(--red); font-weight: 700; }
+  .cmp-price-cell .cheapest { background: #e8f7ef; border-color: #b6e2c9; }
   .mode-tagline { color: rgba(255,255,255,0.78); font-size: 0.82rem; margin-left: 14px; align-self: center; }
 
   .search-panel {
@@ -513,6 +533,9 @@
       <button class="mode-btn tbo" id="modeBtnTbo" onclick="setMode('tbo')" role="tab" aria-selected="false">
         <span class="dot"></span>TBO Search
       </button>
+      <button class="mode-btn cmp" id="modeBtnCmp" onclick="setMode('cmp')" role="tab" aria-selected="false">
+        <span class="dot"></span>Compare Providers
+      </button>
     </div>
     <span class="mode-tagline" id="modeTagline">Amadeus · autocomplete + room images</span>
   </div>
@@ -620,6 +643,51 @@
     </div>
   </section>
 
+  <!-- Compare Providers panel -->
+  <section class="search-panel" id="panelCmp" aria-label="Compare providers" style="display:none">
+    <div class="search-title">
+      <h2>Compare Providers</h2>
+      <div class="hint">Pick a mapped city, see TBO ↔ Amadeus hotel matches, then compare live prices side by side.</div>
+    </div>
+    <div class="form-row-tbo">
+      <div class="field">
+        <label for="cmpCity">City (mapped)</label>
+        <select id="cmpCity" onchange="onCmpCityChange()">
+          <option value="">Loading mapped cities…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cmpCheckin">Check-in</label>
+        <input id="cmpCheckin" type="date"/>
+      </div>
+      <div class="field">
+        <label for="cmpCheckout">Check-out</label>
+        <input id="cmpCheckout" type="date"/>
+      </div>
+    </div>
+    <div class="form-row-tbo-2">
+      <div class="field">
+        <label for="cmpAdults">Adults</label>
+        <select id="cmpAdults">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="cmpRooms">Rooms</label>
+        <select id="cmpRooms">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+      </div>
+      <button class="btn-search" id="cmpLoadBtn" onclick="loadCmpHotels()" disabled>Load matched hotels</button>
+    </div>
+    <div id="cmpHotelsArea" style="margin-top: 16px;"></div>
+  </section>
+
   <section class="results-wrap" id="resultsWrap"></section>
 </main>
 
@@ -656,6 +724,8 @@ document.getElementById("mdesCheckout").value = co.toISOString().slice(0, 10);
 document.getElementById("mdesDest").value = "Dubai (DXB)";
 document.getElementById("tboCheckin").value = ci.toISOString().slice(0, 10);
 document.getElementById("tboCheckout").value = co.toISOString().slice(0, 10);
+document.getElementById("cmpCheckin").value = ci.toISOString().slice(0, 10);
+document.getElementById("cmpCheckout").value = co.toISOString().slice(0, 10);
 
 function clean(value) {
   return String(value || "").replace(/[&<>"']/g, char => ({
@@ -670,14 +740,137 @@ function setMode(next) {
   document.getElementById('modeBtnMdes').setAttribute('aria-selected', next === 'mdes');
   document.getElementById('modeBtnTbo').classList.toggle('active', next === 'tbo');
   document.getElementById('modeBtnTbo').setAttribute('aria-selected', next === 'tbo');
+  document.getElementById('modeBtnCmp').classList.toggle('active', next === 'cmp');
+  document.getElementById('modeBtnCmp').setAttribute('aria-selected', next === 'cmp');
   document.getElementById('panelMdes').style.display = next === 'mdes' ? 'block' : 'none';
   document.getElementById('panelTbo').style.display = next === 'tbo' ? 'block' : 'none';
+  document.getElementById('panelCmp').style.display = next === 'cmp' ? 'block' : 'none';
   document.getElementById('modeTagline').textContent =
-    next === 'mdes' ? 'Amadeus · autocomplete + room images' : 'TBO Holidays · country/city dropdowns';
+    next === 'mdes' ? 'Amadeus · autocomplete + room images'
+    : next === 'tbo' ? 'TBO Holidays · country/city dropdowns'
+    : 'Cross-provider · TBO ↔ Amadeus mapped hotels';
   document.getElementById('resultsWrap').innerHTML = '';
   if (next === 'tbo' && !document.getElementById('tboCountry').dataset.loaded) {
     loadTboCountries();
   }
+  if (next === 'cmp' && !document.getElementById('cmpCity').dataset.loaded) {
+    loadCmpCities();
+  }
+}
+
+/* ====================================================================
+   Compare Providers mode
+==================================================================== */
+
+async function loadCmpCities() {
+  const sel = document.getElementById('cmpCity');
+  try {
+    const res = await fetch('/api/mapping/cities');
+    const data = await res.json();
+    const cities = data.cities || [];
+    if (!cities.length) {
+      sel.innerHTML = '<option value="">No mapped cities yet — run match_hotels first</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">— pick a city —</option>' + cities.map(c =>
+      `<option value="${attr(c.iata_city_code)}">${clean(c.iata_city_code)} · ${clean(c.city_name || '?')} · ${c.match_count} matches</option>`
+    ).join('');
+    sel.dataset.loaded = '1';
+  } catch (err) {
+    sel.innerHTML = `<option value="">Load failed: ${clean(err.message)}</option>`;
+  }
+}
+
+function onCmpCityChange() {
+  const v = document.getElementById('cmpCity').value;
+  document.getElementById('cmpLoadBtn').disabled = !v;
+  document.getElementById('cmpHotelsArea').innerHTML = '';
+}
+
+async function loadCmpHotels() {
+  const city = document.getElementById('cmpCity').value;
+  if (!city) return;
+  const area = document.getElementById('cmpHotelsArea');
+  area.innerHTML = '<div style="padding:16px;color:var(--muted);">Loading mapped hotels…</div>';
+  try {
+    const res = await fetch(`/api/mapping/hotels?city=${encodeURIComponent(city)}`);
+    const data = await res.json();
+    const hotels = data.hotels || [];
+    if (!hotels.length) {
+      area.innerHTML = '<div style="padding:16px;color:var(--muted);">No matches for this city.</div>';
+      return;
+    }
+    let html = `<div style="font-weight:700;margin-bottom:6px;">${hotels.length} matched hotels in ${clean(city)}</div>`;
+    html += '<table class="cmp-table">';
+    html += '<thead><tr><th>Score</th><th>TBO hotel</th><th>Amadeus hotel</th><th>Dist (m)</th><th>Compare prices</th></tr></thead><tbody>';
+    hotels.forEach((h, idx) => {
+      const score = h.combined_score || 0;
+      const cls = score >= 0.95 ? 'hi' : score >= 0.85 ? 'md' : 'lo';
+      html += `<tr id="cmpRow${idx}">`;
+      html += `<td><span class="cmp-score ${cls}">${score.toFixed(3)}</span></td>`;
+      html += `<td>${clean(h.tbo_hotel_name)}<br><small style="color:var(--muted);">TBO ${clean(h.tbo_hotel_code)}</small></td>`;
+      html += `<td>${clean(h.amadeus_hotel_name)}<br><small style="color:var(--muted);">AMA ${clean(h.amadeus_hotel_id)}</small></td>`;
+      html += `<td>${h.distance_meters != null ? h.distance_meters.toFixed(1) : '—'}</td>`;
+      html += `<td><button class="cmp-btn" onclick="comparePrices(${idx}, '${attr(h.tbo_hotel_code)}', '${attr(h.amadeus_hotel_id)}', '${attr(city)}')">Compare</button></td>`;
+      html += `</tr><tr id="cmpPriceRow${idx}"><td colspan="5" style="padding:0;border:0;"></td></tr>`;
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = `<div style="padding:16px;color:var(--red);">Load failed: ${clean(err.message)}</div>`;
+  }
+}
+
+async function comparePrices(idx, tboId, amadeusId, city) {
+  const target = document.querySelector(`#cmpPriceRow${idx} td`);
+  target.innerHTML = '<div class="cmp-price-card">Loading prices from both providers…</div>';
+  const checkin = document.getElementById('cmpCheckin').value;
+  const checkout = document.getElementById('cmpCheckout').value;
+  const adults = document.getElementById('cmpAdults').value;
+  const rooms = document.getElementById('cmpRooms').value;
+  const params = new URLSearchParams({ tbo_id: tboId, amadeus_id: amadeusId, city, checkin, checkout, adults, rooms });
+  try {
+    const res = await fetch(`/api/mapping/compare-prices?${params.toString()}`);
+    const data = await res.json();
+    target.innerHTML = renderPriceCard(data);
+  } catch (err) {
+    target.innerHTML = `<div class="cmp-price-card" style="color:var(--red);">Failed: ${clean(err.message)}</div>`;
+  }
+}
+
+function renderPriceCard(data) {
+  const ama = data.amadeus || {};
+  const tbo = data.tbo || {};
+  const amaPrice = ama.totalPrice ? Number(ama.totalPrice) : null;
+  const tboPrice = tbo.totalFare ? Number(tbo.totalFare) : null;
+  const cheapAma = amaPrice != null && (tboPrice == null || amaPrice <= tboPrice);
+  const cheapTbo = tboPrice != null && (amaPrice == null || tboPrice < amaPrice);
+
+  const amaBody = ama.error ? `<div class="unavail">Error: ${clean(ama.error)}</div>`
+    : ama.available === false ? '<div class="unavail">Not available</div>'
+    : amaPrice != null ? `<div class="price">${clean(ama.currency || '')} ${amaPrice.toFixed(2)}</div>`
+    : '<div class="unavail">No offer returned</div>';
+
+  const tboBody = tbo.error ? `<div class="unavail">Error: ${clean(tbo.error)}</div>`
+    : tbo.available === false ? '<div class="unavail">Not available</div>'
+    : tboPrice != null ? `<div class="price">${clean(tbo.currency || '')} ${tboPrice.toFixed(2)}</div>`
+    : '<div class="unavail">No rooms returned</div>';
+
+  return `
+    <div class="cmp-price-card">
+      <div style="font-weight:700;">Live price comparison</div>
+      <div class="cmp-price-row">
+        <div class="cmp-price-cell ${cheapAma ? 'cheapest' : ''}">
+          <h4>Amadeus (SOAP)</h4>
+          ${amaBody}
+        </div>
+        <div class="cmp-price-cell ${cheapTbo ? 'cheapest' : ''}">
+          <h4>TBO Holidays</h4>
+          ${tboBody}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 /* ====================================================================

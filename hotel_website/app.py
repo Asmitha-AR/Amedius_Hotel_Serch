@@ -1087,5 +1087,108 @@ def hotel_image(hotel_id):
 def offer_detail(offer_id):
     return jsonify(call_enhanced_pricing(offer_id))
 
+
+# ====================================================================
+# Cross-provider comparison endpoints — driven by hotel_id_mapping.
+# ====================================================================
+
+@app.route("/api/mapping/cities")
+def mapping_cities():
+    from db.mapping_queries import list_mapped_cities
+    try:
+        return jsonify({"cities": list_mapped_cities()})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/mapping/hotels")
+def mapping_hotels():
+    from db.mapping_queries import list_mapped_hotels
+    city = (request.args.get("city") or "").upper().strip()
+    if not city:
+        return jsonify({"error": "city (IATA) required"}), 400
+    try:
+        return jsonify({"city": city, "hotels": list_mapped_hotels(city)})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/mapping/compare-prices")
+def mapping_compare_prices():
+    """Fetch live prices from both providers for a matched hotel pair."""
+    tbo_id = (request.args.get("tbo_id") or "").strip()
+    amadeus_id = (request.args.get("amadeus_id") or "").strip().upper()
+    city = (request.args.get("city") or "").upper().strip()
+    checkin = request.args.get("checkin")
+    checkout = request.args.get("checkout")
+    try:
+        adults = max(1, int(request.args.get("adults") or 2))
+        rooms = max(1, int(request.args.get("rooms") or 1))
+    except (TypeError, ValueError):
+        return jsonify({"error": "adults and rooms must be integers"}), 400
+    nationality = (request.args.get("nationality") or "AE").upper()
+
+    if not (city and checkin and checkout and (tbo_id or amadeus_id)):
+        return jsonify({"error": "city, checkin, checkout and at least one hotel id required"}), 400
+
+    result = {"amadeus": None, "tbo": None}
+
+    # Amadeus SOAP availability for this single hotel.
+    if amadeus_id:
+        try:
+            data, status = call_hotel_availability(city, checkin, checkout, adults, rooms, amadeus_id)
+            hotels = (data or {}).get("hotels") or []
+            top = hotels[0] if hotels else None
+            offer = (top or {}).get("offers", [{}])[0] if top else {}
+            result["amadeus"] = {
+                "status": status,
+                "hotelId": amadeus_id,
+                "name": (top or {}).get("name"),
+                "totalPrice": offer.get("totalPrice"),
+                "avgPerNight": offer.get("avgPerNight"),
+                "currency": offer.get("currency"),
+                "available": bool(top and top.get("available")),
+                "raw": top,
+            }
+        except Exception as exc:
+            result["amadeus"] = {"error": str(exc)}
+
+    # TBO Search for this single hotel.
+    if tbo_id:
+        pax_rooms = [{"Adults": adults, "Children": 0, "ChildrenAges": []} for _ in range(rooms)]
+        payload = {
+            "CheckIn": checkin,
+            "CheckOut": checkout,
+            "HotelCodes": tbo_id,
+            "GuestNationality": nationality,
+            "PaxRooms": pax_rooms,
+            "ResponseTime": 25,
+            "IsDetailedResponse": True,
+            "Filters": {"Refundable": False, "NoOfRooms": 0, "MealType": "All"},
+        }
+        try:
+            data = tbo_request("POST", "Search", payload)
+            hotel_results = (data or {}).get("HotelResult") or []
+            top = hotel_results[0] if hotel_results else None
+            rooms_data = (top or {}).get("Rooms") or []
+            cheapest_room = min(rooms_data, key=lambda r: float(r.get("TotalFare", 0) or 9e9)) if rooms_data else None
+            result["tbo"] = {
+                "status": 200 if top else 204,
+                "hotelCode": tbo_id,
+                "currency": (top or {}).get("Currency"),
+                "totalFare": (cheapest_room or {}).get("TotalFare") if cheapest_room else None,
+                "totalTax": (cheapest_room or {}).get("TotalTax") if cheapest_room else None,
+                "roomCount": len(rooms_data),
+                "available": bool(rooms_data),
+                "raw": top,
+            }
+        except requests.RequestException as exc:
+            result["tbo"] = {"error": f"TBO request failed: {exc}"}
+        except Exception as exc:
+            result["tbo"] = {"error": str(exc)}
+
+    return jsonify(result)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5050, threaded=True)
