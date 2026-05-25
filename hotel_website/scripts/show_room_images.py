@@ -10,8 +10,13 @@ url = (
 )
 data = requests.get(url, timeout=120).json()
 ama = data.get("amadeus") or {}
-print(f"Hotel: {ama.get('name')}  ({ama.get('hotelId')})")
-print()
+tbo = data.get("tbo") or {}
+print(f"Amadeus: {ama.get('name')}  ({ama.get('hotelId')})")
 for i, o in enumerate(ama.get("offers") or []):
     imgs = o.get("images") or []
-    print(f"  #{i}  {(o.get('description') or '')[:55]:<55}  gallery_size={len(imgs)}")
+    print(f"  #{i}  {(o.get('description') or '')[:50]:<50}  gallery={len(imgs)}")
+print()
+print(f"TBO: code {tbo.get('hotelCode')}  total rooms={tbo.get('roomCount')}")
+for i, r in enumerate(tbo.get("rooms") or []):
+    imgs = r.get("images") or []
+    print(f"  #{i}  {(r.get('name') or '')[:50]:<50}  gallery={len(imgs)}")

@@ -1139,15 +1139,31 @@ function renderTboRooms(tbo) {
     const refundCls = r.refundable ? 'refund-yes' : 'refund-no';
     const refundLbl = r.refundable ? 'Refundable' : 'Non-refundable';
     const inc = (r.inclusion || '').split(',').slice(0, 3).map(s => s.trim()).filter(Boolean).join(' · ');
+    const imgs = r.images || [];
+    let imgHtml;
+    if (imgs.length) {
+      const galleryId = cmpRoomGalleries.length;
+      cmpRoomGalleries.push({ title: r.name, images: imgs });
+      const badge = imgs.length > 1 ? `<span class="cmp-room-img-badge">+${imgs.length - 1}</span>` : '';
+      imgHtml = `<div class="cmp-room-img-wrap" onclick="openCmpGallery(${galleryId}, 0)" title="Click to view ${imgs.length} photos">
+        <img class="cmp-room-img clickable" src="${attr(imgs[0])}" loading="lazy" alt="Room photo"/>
+        ${badge}
+      </div>`;
+    } else {
+      imgHtml = `<div class="cmp-room-img placeholder">no image</div>`;
+    }
     html += `<div class="cmp-room">
-      <div class="cmp-room-name">${clean(r.name)}</div>
-      <div class="cmp-room-chips">
-        <span class="cmp-chip">${clean(r.mealType)}</span>
-        <span class="cmp-chip ${refundCls}">${refundLbl}</span>
-        ${inc ? `<span class="cmp-chip">${clean(inc)}</span>` : ''}
+      ${imgHtml}
+      <div class="cmp-room-body">
+        <div class="cmp-room-name">${clean(r.name)}</div>
+        <div class="cmp-room-chips">
+          <span class="cmp-chip">${clean(r.mealType)}</span>
+          <span class="cmp-chip ${refundCls}">${refundLbl}</span>
+          ${inc ? `<span class="cmp-chip">${clean(inc)}</span>` : ''}
+        </div>
+        <div class="cmp-room-price">${clean(cur)} ${total}</div>
+        ${tax ? `<div class="cmp-room-tax">Tax ${clean(cur)} ${tax}</div>` : ''}
       </div>
-      <div class="cmp-room-price">${clean(cur)} ${total}</div>
-      ${tax ? `<div class="cmp-room-tax">Tax ${clean(cur)} ${tax}</div>` : ''}
     </div>`;
   });
   html += '</div>';

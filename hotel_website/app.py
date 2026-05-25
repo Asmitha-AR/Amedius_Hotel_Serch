@@ -1047,6 +1047,38 @@ def tbo_hotel_details():
 
 
 _tbo_city_hotels_cache = {}
+_tbo_image_cache = {}
+
+
+def get_tbo_hotel_images(hotel_code):
+    """Returns a list of TBO image URLs for the hotel (cached)."""
+    code = str(hotel_code or "").strip()
+    if not code:
+        return []
+    if code in _tbo_image_cache:
+        return _tbo_image_cache[code]
+    try:
+        data = tbo_request("POST", "HotelDetails", {"Hotelcodes": code, "Language": "EN"})
+    except Exception as exc:
+        print(f"TBO image fetch failed for {code}: {exc}", flush=True)
+        _tbo_image_cache[code] = []
+        return []
+    details = (data or {}).get("HotelDetails") or []
+    images = []
+    seen = set()
+    for entry in details:
+        if not isinstance(entry, dict):
+            continue
+        for url in (entry.get("Images") or []):
+            if isinstance(url, str) and url.startswith(("http://", "https://")) and url not in seen:
+                seen.add(url)
+                images.append(url)
+        single = entry.get("Image")
+        if isinstance(single, str) and single.startswith(("http://", "https://")) and single not in seen:
+            seen.add(single)
+            images.append(single)
+    _tbo_image_cache[code] = images
+    return images
 
 
 def tbo_hotels_for_city(city_code):
@@ -1303,6 +1335,24 @@ def mapping_compare_prices():
                     return 9e9
             rooms_sorted = sorted(rooms_data, key=_tbo_price)[:8]
             cheapest = rooms_sorted[0] if rooms_sorted else {}
+
+            tbo_image_pool = get_tbo_hotel_images(tbo_id)
+
+            def tbo_gallery(position, gallery_size=6):
+                if not tbo_image_pool:
+                    return []
+                n = len(tbo_image_pool)
+                seen = set()
+                out = []
+                for j in range(n):
+                    url = tbo_image_pool[(position + j) % n]
+                    if url not in seen:
+                        seen.add(url)
+                        out.append(url)
+                        if len(out) >= gallery_size:
+                            break
+                return out
+
             result["tbo"] = {
                 "status": 200 if top else 204,
                 "hotelCode": tbo_id,
@@ -1318,8 +1368,9 @@ def mapping_compare_prices():
                         "inclusion": r.get("Inclusion") or "",
                         "totalFare": r.get("TotalFare"),
                         "totalTax": r.get("TotalTax"),
+                        "images": tbo_gallery(i),
                     }
-                    for r in rooms_sorted
+                    for i, r in enumerate(rooms_sorted)
                 ],
             }
         except requests.RequestException as exc:
