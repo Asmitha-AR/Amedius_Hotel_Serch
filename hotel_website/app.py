@@ -503,8 +503,9 @@ def parse_offer(room_stay, hotel_id, city="", checkin="", checkout="", adults=1,
     cancel = first_desc(room_stay, "CancelPenalty")
     deadline = first_child(cancel, "Deadline") if cancel is not None else None
     penalty = first_child(cancel, "AmountPercent") if cancel is not None else None
-    description = text_of(first_desc(room_stay, "RoomRateDescription")) or text_of(first_desc(room_stay, "RatePlanDescription"))
+    rate_desc = text_of(first_desc(room_stay, "RoomRateDescription")) or text_of(first_desc(room_stay, "RatePlanDescription"))
     room_desc = text_of(first_desc(room_stay, "RoomDescription"))
+    description = rate_desc or room_desc
     total_money = money_attrs(total)
     base_money = money_attrs(base)
     cancel_money = money_attrs(penalty)
@@ -538,6 +539,8 @@ def parse_offer(room_stay, hotel_id, city="", checkin="", checkout="", adults=1,
         "offerId": offer_id,
         "roomType": room_rate.get("RoomTypeCode", "") if room_rate is not None else (room_type.get("RoomTypeCode", "") if room_type is not None else ""),
         "description": (description or room_desc)[:120],
+        "roomName": room_desc[:120],
+        "rateName": rate_desc[:120],
         "beds": room_type.get("NumberOfUnits", "") if room_type is not None else "",
         "bedType": room_type.get("RoomType", "") if room_type is not None else "",
         "boardType": (rate_plan.get("MealsIncluded") if rate_plan is not None else "") or "ROOM_ONLY",

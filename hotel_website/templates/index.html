@@ -248,6 +248,7 @@
   .rate-trigger:hover { border-color: #b8c7e6; background: #fbfcff; }
   .rate-trigger::after { content: ""; position: absolute; right: 15px; top: 50%; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-65%) rotate(45deg); }
   .rate-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 850; }
+  .rate-room-type { color: var(--muted); font-size: 0.78rem; font-weight: 750; }
   .rate-sub { color: var(--muted); font-size: 0.78rem; font-weight: 750; }
 
   .rate-menu { display: none; position: absolute; z-index: 20; inset: calc(100% + 8px) 0 auto 0; max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; box-shadow: 0 18px 40px rgba(23, 32, 51, 0.16); padding: 6px; }
@@ -262,6 +263,7 @@
   .offer-row { display: grid; grid-template-columns: minmax(0, 1.25fr) auto auto; gap: 16px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: #fbfcfe; cursor: pointer; }
   .offer-row:hover { border-color: #b8c7e6; background: #f7faff; }
   .offer-room-type { font-size: 0.98rem; font-weight: 900; line-height: 1.25; }
+  .offer-room-code { margin-top: 5px; color: var(--muted); font-size: 0.82rem; font-weight: 750; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .chip { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 9px; font-size: 0.72rem; font-weight: 850; white-space: nowrap; }
   .board-pill { color: #23406f; background: #edf4ff; }
@@ -852,10 +854,26 @@ function cleanRoomText(v) {
     .replace(/\bRO-RO\b/gi, "").replace(/\bROOM\s*ONLY\b/gi, "")
     .replace(/\s*[-|]\s*(AED|USD|EUR|GBP)\s*\d[\d.]*$/i, "").trim();
 }
+function roomNameFromRateText(v) {
+  let text = cleanRoomText(v);
+  if (!text) return "";
+  text = text.replace(/^.*?\bincludes?\b\s*/i, "");
+  text = text.replace(/^(wi[\s-]*fi|wifi|internet|breakfast|and|&|,|\s)+/i, "").trim();
+  return cleanRoomText(text);
+}
 function roomTitleFor(o) {
-  const d = cleanRoomText(o.description);
-  if (d) return d;
-  return cleanRoomText(`${o.bedType || ""} ${o.roomType || ""}`) || "Selected room";
+  return cleanRoomText(o.roomName) ||
+    roomNameFromRateText(o.description) ||
+    cleanRoomText(`${o.bedType || ""} ${o.roomType || ""}`) ||
+    "Selected room";
+}
+function roomTypeFor(o) {
+  const parts = [];
+  const bedType = cleanRoomText(o.bedType);
+  if (bedType) parts.push(bedType);
+  if (o.roomType) parts.push(`Room type ${o.roomType}`);
+  if (o.beds) parts.push(`${o.beds} unit${String(o.beds) === "1" ? "" : "s"}`);
+  return parts.join(" · ") || "Room type not specified";
 }
 
 function renderMdesResults(data, checkin, checkout) {
@@ -937,6 +955,7 @@ function ratePickerHtml(hotel, selected) {
     <div class="rate-picker" id="rate-picker-${attr(hotel.hotelId)}">
       <button class="rate-trigger" type="button" data-hotel-id="${attr(hotel.hotelId)}" onclick="toggleRatePicker(event, this.dataset.hotelId)">
         <span class="rate-title">${clean(roomTitleFor(selected))}</span>
+        <span class="rate-room-type">${clean(roomTypeFor(selected))}</span>
         <span class="rate-sub">${clean(m.boardLabel)} · ${clean(m.refundLabel)} · ${clean(offerPriceLabel(selected))} total</span>
       </button>
       <div class="rate-menu">${hotel.offers.map((offer, idx) => rateOptionHtml(hotel.hotelId, offer, idx)).join("")}</div>
@@ -946,7 +965,7 @@ function rateOptionHtml(hotelId, offer, idx) {
   const m = offerMeta(offer);
   return `
     <button class="rate-option ${idx === 0 ? "is-selected" : ""}" type="button" data-hotel-id="${attr(hotelId)}" data-offer-index="${idx}" onclick="selectRateOption(event, this)">
-      <span><span class="rate-option-title">${clean(roomTitleFor(offer))}</span><span class="rate-option-meta">${clean(m.boardLabel)} · ${clean(m.refundLabel)}</span></span>
+      <span><span class="rate-option-title">${clean(roomTitleFor(offer))}</span><span class="rate-option-meta">${clean(roomTypeFor(offer))} · ${clean(m.boardLabel)} · ${clean(m.refundLabel)}</span></span>
       <span class="rate-option-price">${clean(offerPriceLabel(offer))}<small>${clean(perNightLabel(offer))}/night</small></span>
     </button>`;
 }
@@ -957,6 +976,7 @@ function offerSummaryHtml(hotelId, hotelName, o, nights) {
     <div class="offer-row" data-offer-id="${attr(o.offerId)}" data-hotel-name="${attr(hotelName)}" onclick="showDetailFromElement(this)">
       <div>
         <div class="offer-room-type">${clean(roomTitleFor(o))}</div>
+        <div class="offer-room-code">${clean(roomTypeFor(o))}</div>
         <div class="chips">
           <span class="chip board-pill">${clean(m.boardLabel)}</span>
           <span class="chip refund-${m.refundKey}">${clean(m.refundLabel)}</span>
@@ -989,6 +1009,7 @@ function updateSelectedOffer(hotelId, idx = 0) {
   target.innerHTML = offerSummaryHtml(hotelId, hotel.name, selected, currentNights || 1);
   const m = offerMeta(selected);
   picker.querySelector(".rate-title").textContent = roomTitleFor(selected);
+  picker.querySelector(".rate-room-type").textContent = roomTypeFor(selected);
   picker.querySelector(".rate-sub").textContent = `${m.boardLabel} · ${m.refundLabel} · ${offerPriceLabel(selected)} total`;
   picker.querySelectorAll(".rate-option").forEach((o, i) => o.classList.toggle("is-selected", i === idx));
   picker.classList.remove("open");
