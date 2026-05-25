@@ -1,10 +1,12 @@
 """Match TBO hotels ↔ Amadeus hotels for cities in city_cd_mapping.
 
 Pipeline per city:
-  1. Fetch Amadeus hotels (name + coords) via /reference-data/locations/hotels/by-city.
+  1. Fetch Amadeus inventory via SOAP Hotel_MultiSingleAvailability (name + hotelId).
   2. Fetch TBO hotels (name + code) via TBOHotelCodeList.
   3. For each TBO hotel, shortlist Amadeus candidates with name_similarity >= PREFILTER.
-  4. For shortlisted pairs, bulk-fetch TBO HotelDetails to get coords.
+  4. For shortlisted pairs, fetch coords:
+       - TBO    → REST HotelDetails (bulk)
+       - Amadeus → SOAP OTA_HotelDescriptiveInfoRQ (bulk)
   5. Compute combined score (name + distance) and persist matches >= THRESHOLD.
 
 Run from the hotel_website directory:
@@ -18,7 +20,7 @@ import time
 
 from psycopg2.extras import execute_values
 
-from db.amadeus_client import hotels_by_city, AmadeusError
+from db.amadeus_soap import hotels_by_city_soap, hotels_descriptive_info_soap, AmadeusSoapError
 from db.db import get_cursor, init_schema
 from db.matching import combined_score, distance_score, haversine_meters, name_similarity
 from db.tbo_hotels import hotels_for_city, hotel_details
@@ -107,9 +109,9 @@ def _persist(rows: list[tuple]) -> None:
 
 def match_city(tbo_city_code: str, iata_city_code: str, city_name: str) -> tuple[int, int]:
     try:
-        ama_list = hotels_by_city(iata_city_code)
-    except AmadeusError as exc:
-        print(f"  Amadeus failed for {iata_city_code}: {exc}")
+        ama_list = hotels_by_city_soap(iata_city_code)
+    except AmadeusSoapError as exc:
+        print(f"  Amadeus SOAP failed for {iata_city_code}: {exc}")
         return (0, 0)
     if not ama_list:
         print(f"  No Amadeus hotels for {iata_city_code}")
@@ -124,13 +126,17 @@ def match_city(tbo_city_code: str, iata_city_code: str, city_name: str) -> tuple
         print(f"  No TBO hotels for {tbo_city_code}")
         return (0, 0)
 
-    print(f"  TBO={len(tbo_list)} Amadeus={len(ama_list)}")
+    print(f"  TBO={len(tbo_list)} Amadeus(SOAP)={len(ama_list)}")
     shortlist = _shortlist(tbo_list, ama_list)
     if not shortlist:
         print(f"  No name-prefilter candidates")
         return (0, 0)
 
     tbo_coords = _fetch_tbo_coords(list(shortlist.keys()))
+
+    candidate_ama_ids = sorted({ama["hotelId"] for cands in shortlist.values() for _, ama in cands})
+    print(f"  Fetching Amadeus coords for {len(candidate_ama_ids)} candidates via SOAP DescriptiveInfo...")
+    ama_coords = hotels_descriptive_info_soap(candidate_ama_ids)
 
     rows: list[tuple] = []
     for tbo_code, candidates in shortlist.items():
@@ -142,7 +148,10 @@ def match_city(tbo_city_code: str, iata_city_code: str, city_name: str) -> tuple
 
         best = None
         for name_score, ama in candidates:
-            dist = haversine_meters(tbo_lat, tbo_lon, ama.get("latitude"), ama.get("longitude"))
+            coords = ama_coords.get(ama["hotelId"], {})
+            ama_lat = coords.get("latitude") if coords.get("latitude") is not None else ama.get("latitude")
+            ama_lon = coords.get("longitude") if coords.get("longitude") is not None else ama.get("longitude")
+            dist = haversine_meters(tbo_lat, tbo_lon, ama_lat, ama_lon)
             d_score = distance_score(dist)
             score = combined_score(name_score, d_score)
             if best is None or score > best[0]:
