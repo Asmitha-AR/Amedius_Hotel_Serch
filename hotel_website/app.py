@@ -1152,16 +1152,37 @@ def mapping_compare_prices():
             data, status = call_hotel_availability(city, checkin, checkout, adults, rooms, amadeus_id)
             hotels = (data or {}).get("hotels") or []
             top = hotels[0] if hotels else None
-            offer = (top or {}).get("offers", [{}])[0] if top else {}
+            offers = (top or {}).get("offers") or []
+            # Sort by total price, take top 8.
+            def _ama_price(o):
+                try:
+                    return float(o.get("totalPrice") or o.get("basePrice") or 9e9)
+                except (TypeError, ValueError):
+                    return 9e9
+            offers_sorted = sorted(offers, key=_ama_price)[:8]
+            cheapest = offers_sorted[0] if offers_sorted else {}
             result["amadeus"] = {
                 "status": status,
                 "hotelId": amadeus_id,
                 "name": (top or {}).get("name"),
-                "totalPrice": offer.get("totalPrice"),
-                "avgPerNight": offer.get("avgPerNight"),
-                "currency": offer.get("currency"),
+                "currency": cheapest.get("currency"),
+                "cheapestTotal": cheapest.get("totalPrice"),
                 "available": bool(top and top.get("available")),
-                "raw": top,
+                "offers": [
+                    {
+                        "roomType": o.get("roomType") or "",
+                        "description": o.get("description") or o.get("rateName") or o.get("roomName") or "Room",
+                        "bedType": o.get("bedType") or "",
+                        "boardType": (o.get("boardType") or "ROOM_ONLY").replace("_", " "),
+                        "basePrice": o.get("basePrice"),
+                        "totalPrice": o.get("totalPrice"),
+                        "avgPerNight": o.get("avgPerNight"),
+                        "currency": o.get("currency"),
+                        "refundable": o.get("refundable") or "",
+                        "cancelDeadline": o.get("cancelDeadline") or "",
+                    }
+                    for o in offers_sorted
+                ],
             }
         except Exception as exc:
             result["amadeus"] = {"error": str(exc)}
@@ -1184,16 +1205,31 @@ def mapping_compare_prices():
             hotel_results = (data or {}).get("HotelResult") or []
             top = hotel_results[0] if hotel_results else None
             rooms_data = (top or {}).get("Rooms") or []
-            cheapest_room = min(rooms_data, key=lambda r: float(r.get("TotalFare", 0) or 9e9)) if rooms_data else None
+            def _tbo_price(r):
+                try:
+                    return float(r.get("TotalFare") or 9e9)
+                except (TypeError, ValueError):
+                    return 9e9
+            rooms_sorted = sorted(rooms_data, key=_tbo_price)[:8]
+            cheapest = rooms_sorted[0] if rooms_sorted else {}
             result["tbo"] = {
                 "status": 200 if top else 204,
                 "hotelCode": tbo_id,
                 "currency": (top or {}).get("Currency"),
-                "totalFare": (cheapest_room or {}).get("TotalFare") if cheapest_room else None,
-                "totalTax": (cheapest_room or {}).get("TotalTax") if cheapest_room else None,
+                "cheapestTotal": cheapest.get("TotalFare") if cheapest else None,
                 "roomCount": len(rooms_data),
                 "available": bool(rooms_data),
-                "raw": top,
+                "rooms": [
+                    {
+                        "name": " · ".join(r.get("Name")) if isinstance(r.get("Name"), list) else (r.get("Name") or "Room"),
+                        "mealType": (r.get("MealType") or "").replace("_", " ") or "Room only",
+                        "refundable": bool(r.get("IsRefundable")),
+                        "inclusion": r.get("Inclusion") or "",
+                        "totalFare": r.get("TotalFare"),
+                        "totalTax": r.get("TotalTax"),
+                    }
+                    for r in rooms_sorted
+                ],
             }
         except requests.RequestException as exc:
             result["tbo"] = {"error": f"TBO request failed: {exc}"}

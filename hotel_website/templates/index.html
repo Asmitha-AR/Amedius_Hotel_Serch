@@ -108,6 +108,16 @@
   .cmp-price-cell .price { font-size: 1.5rem; font-weight: 800; color: var(--ink); }
   .cmp-price-cell .unavail { color: var(--red); font-weight: 700; }
   .cmp-price-cell .cheapest { background: #e8f7ef; border-color: #b6e2c9; }
+  .cmp-room-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .cmp-room { padding: 10px 12px; border: 1px solid var(--soft-line); border-radius: 6px; background: var(--paper); }
+  .cmp-room-name { font-weight: 700; font-size: 0.86rem; color: var(--ink); }
+  .cmp-room-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0; }
+  .cmp-chip { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; background: #eef3fb; color: var(--navy); }
+  .cmp-chip.refund-yes { background: #e8f7ef; color: var(--green); }
+  .cmp-chip.refund-no { background: #fde8e8; color: var(--red); }
+  .cmp-room-price { font-weight: 800; color: var(--ink); font-size: 0.98rem; }
+  .cmp-room-tax { color: var(--muted); font-size: 0.74rem; }
+  .cmp-room-bestprice { color: var(--green); font-weight: 800; font-size: 1.05rem; margin-bottom: 4px; }
   .mode-tagline { color: rgba(255,255,255,0.78); font-size: 0.82rem; margin-left: 14px; align-self: center; }
 
   .search-panel {
@@ -968,24 +978,26 @@ async function comparePrices(idx, tboId, amadeusId, city) {
 function renderPriceCard(data) {
   const ama = data.amadeus || {};
   const tbo = data.tbo || {};
-  const amaPrice = ama.totalPrice ? Number(ama.totalPrice) : null;
-  const tboPrice = tbo.totalFare ? Number(tbo.totalFare) : null;
+  const amaPrice = ama.cheapestTotal ? Number(ama.cheapestTotal) : null;
+  const tboPrice = tbo.cheapestTotal ? Number(tbo.cheapestTotal) : null;
   const cheapAma = amaPrice != null && (tboPrice == null || amaPrice <= tboPrice);
   const cheapTbo = tboPrice != null && (amaPrice == null || tboPrice < amaPrice);
 
-  const amaBody = ama.error ? `<div class="unavail">Error: ${clean(ama.error)}</div>`
-    : ama.available === false ? '<div class="unavail">Not available</div>'
-    : amaPrice != null ? `<div class="price">${clean(ama.currency || '')} ${amaPrice.toFixed(2)}</div>`
-    : '<div class="unavail">No offer returned</div>';
+  const amaBody = ama.error
+    ? `<div class="unavail">Error: ${clean(ama.error)}</div>`
+    : ama.available === false
+      ? '<div class="unavail">Not available</div>'
+      : renderAmadeusRooms(ama);
 
-  const tboBody = tbo.error ? `<div class="unavail">Error: ${clean(tbo.error)}</div>`
-    : tbo.available === false ? '<div class="unavail">Not available</div>'
-    : tboPrice != null ? `<div class="price">${clean(tbo.currency || '')} ${tboPrice.toFixed(2)}</div>`
-    : '<div class="unavail">No rooms returned</div>';
+  const tboBody = tbo.error
+    ? `<div class="unavail">Error: ${clean(tbo.error)}</div>`
+    : tbo.available === false
+      ? '<div class="unavail">Not available</div>'
+      : renderTboRooms(tbo);
 
   return `
     <div class="cmp-price-card">
-      <div style="font-weight:700;">Live price comparison</div>
+      <div style="font-weight:700;margin-bottom:6px;">Live price comparison — top rooms from each provider</div>
       <div class="cmp-price-row">
         <div class="cmp-price-cell ${cheapAma ? 'cheapest' : ''}">
           <h4>Amadeus (SOAP)</h4>
@@ -998,6 +1010,60 @@ function renderPriceCard(data) {
       </div>
     </div>
   `;
+}
+
+function renderAmadeusRooms(ama) {
+  const offers = ama.offers || [];
+  if (!offers.length) return '<div class="unavail">No offers returned</div>';
+  const cur = ama.currency || offers[0].currency || '';
+  const cheapest = Number(offers[0].totalPrice || offers[0].basePrice || 0);
+  let html = `<div class="cmp-room-bestprice">From ${clean(cur)} ${cheapest.toFixed(2)}</div>`;
+  html += '<div class="cmp-room-list">';
+  offers.forEach(o => {
+    const total = o.totalPrice ? Number(o.totalPrice).toFixed(2) : (o.basePrice ? Number(o.basePrice).toFixed(2) : '—');
+    const refundCls = (o.refundable || '').includes('REFUNDABLE') ? 'refund-yes' : 'refund-no';
+    const refundLbl = (o.refundable || '').includes('REFUNDABLE') ? 'Refundable' : 'Non-refundable';
+    html += `<div class="cmp-room">
+      <div class="cmp-room-name">${clean(o.description || o.roomType || 'Room')}</div>
+      <div class="cmp-room-chips">
+        <span class="cmp-chip">${clean(o.boardType || 'Room only')}</span>
+        ${o.bedType ? `<span class="cmp-chip">${clean(o.bedType)}</span>` : ''}
+        <span class="cmp-chip ${refundCls}">${refundLbl}</span>
+      </div>
+      <div class="cmp-room-price">${clean(o.currency || cur)} ${total}</div>
+      ${o.avgPerNight ? `<div class="cmp-room-tax">${clean(o.currency || cur)} ${Number(o.avgPerNight).toFixed(2)} / night</div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderTboRooms(tbo) {
+  const rooms = tbo.rooms || [];
+  if (!rooms.length) return '<div class="unavail">No rooms returned</div>';
+  const cur = tbo.currency || '';
+  const cheapest = Number(rooms[0].totalFare || 0);
+  let html = `<div class="cmp-room-bestprice">From ${clean(cur)} ${cheapest.toFixed(2)}</div>`;
+  html += '<div class="cmp-room-list">';
+  rooms.forEach(r => {
+    const total = r.totalFare != null ? Number(r.totalFare).toFixed(2) : '—';
+    const tax = r.totalTax != null ? Number(r.totalTax).toFixed(2) : null;
+    const refundCls = r.refundable ? 'refund-yes' : 'refund-no';
+    const refundLbl = r.refundable ? 'Refundable' : 'Non-refundable';
+    const inc = (r.inclusion || '').split(',').slice(0, 3).map(s => s.trim()).filter(Boolean).join(' · ');
+    html += `<div class="cmp-room">
+      <div class="cmp-room-name">${clean(r.name)}</div>
+      <div class="cmp-room-chips">
+        <span class="cmp-chip">${clean(r.mealType)}</span>
+        <span class="cmp-chip ${refundCls}">${refundLbl}</span>
+        ${inc ? `<span class="cmp-chip">${clean(inc)}</span>` : ''}
+      </div>
+      <div class="cmp-room-price">${clean(cur)} ${total}</div>
+      ${tax ? `<div class="cmp-room-tax">Tax ${clean(cur)} ${tax}</div>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+  return html;
 }
 
 /* ====================================================================
