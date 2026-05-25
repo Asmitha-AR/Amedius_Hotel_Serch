@@ -259,27 +259,32 @@ def build_hotel_content_body(hotel_code):
     </OTA_HotelDescriptiveInfoRQ>"""
 
 
-def parse_hotel_images(xml_text, limit=12):
+def parse_hotel_images(xml_text, limit=12, include_description=False):
     root = ET.fromstring(xml_text)
     images = []
     seen = set()
     preferred = {"J": 0, "I": 1, "H": 2, "F": 3, "E": 4, "D": 5, "C": 6, "B": 7, "A": 8}
 
-    def add_image(url, width=0, height=0, category="", dimension=""):
+    def add_image(url, width=0, height=0, category="", dimension="", description=""):
         if not url or not url.lower().startswith(("http://", "https://")) or url in seen:
             return
         seen.add(url)
-        images.append({
+        entry = {
             "url": url,
             "width": width,
             "height": height,
             "category": category,
             "dimension": dimension,
-        })
+        }
+        if include_description:
+            entry["description"] = description
+        images.append(entry)
 
     for image_item in root.iter():
         if local_name(image_item.tag) != "ImageItem":
             continue
+        desc_node = first_desc(image_item, "Description") if include_description else None
+        item_desc = text_of(desc_node) if desc_node is not None else ""
         candidates = []
         for image_format in image_item.iter():
             if local_name(image_format.tag) != "ImageFormat":
@@ -298,6 +303,7 @@ def parse_hotel_images(xml_text, limit=12):
                 "height": height,
                 "category": image_item.get("Category", ""),
                 "dimension": dimension,
+                "description": item_desc,
             }))
         if candidates:
             candidates.sort(key=lambda item: (item[0], item[1]))
@@ -310,10 +316,62 @@ def parse_hotel_images(xml_text, limit=12):
                     if url and url.lower().startswith(("http://", "https://")):
                         urls.append(url)
             if urls:
-                add_image(urls[-1], category=image_item.get("Category", ""))
+                add_image(urls[-1], category=image_item.get("Category", ""), description=item_desc)
         if len(images) >= limit:
             break
     return images
+
+
+# Amadeus image categories (1A standard):
+# 1 Exterior · 2 Lobby · 3 Pool · 4 Restaurant · 5 Health Club · 6 Guest Room
+# 7 Suite · 8 Sports · 9 Bar · 10 Beach · 11 Spa · 12 Suite · 13 Meeting · 17 Other
+ROOM_CATEGORIES = {"6", "7", "12"}
+BATH_HINT = "bath"
+SUITE_HINT = "suite"
+
+_hotel_categorized_cache = {}
+
+
+def get_hotel_images_categorized(hotel_code):
+    """Returns {room: [...], bath: [...], suite: [...], other: [...]}."""
+    if not hotel_code:
+        return {"room": [], "bath": [], "suite": [], "other": []}
+    if hotel_code in _hotel_categorized_cache:
+        return _hotel_categorized_cache[hotel_code]
+    try:
+        envelope = build_start_envelope(CONTENT_ACTION, build_hotel_content_body(hotel_code))
+        session = requests.Session()
+        session.trust_env = False
+        response = session.post(
+            SOAP_ENDPOINT,
+            data=envelope.encode("utf-8"),
+            headers={"Content-Type": "text/xml; charset=utf-8", "SOAPAction": CONTENT_ACTION},
+            timeout=45,
+        )
+        if response.status_code >= 400:
+            _hotel_categorized_cache[hotel_code] = {"room": [], "bath": [], "suite": [], "other": []}
+            return _hotel_categorized_cache[hotel_code]
+        all_images = parse_hotel_images(response.text, limit=300, include_description=True)
+    except Exception as exc:
+        print(f"Categorized image fetch failed for {hotel_code}: {exc}", flush=True)
+        _hotel_categorized_cache[hotel_code] = {"room": [], "bath": [], "suite": [], "other": []}
+        return _hotel_categorized_cache[hotel_code]
+
+    buckets = {"room": [], "bath": [], "suite": [], "other": []}
+    for img in all_images:
+        cat = str(img.get("category") or "").strip()
+        desc = (img.get("description") or "").lower()
+        if cat == "12" or SUITE_HINT in desc:
+            buckets["suite"].append(img["url"])
+        elif cat in ROOM_CATEGORIES:
+            if BATH_HINT in desc:
+                buckets["bath"].append(img["url"])
+            else:
+                buckets["room"].append(img["url"])
+        else:
+            buckets["other"].append(img["url"])
+    _hotel_categorized_cache[hotel_code] = buckets
+    return buckets
 
 
 def get_hotel_images(hotel_code):
@@ -1153,7 +1211,7 @@ def mapping_compare_prices():
             hotels = (data or {}).get("hotels") or []
             top = hotels[0] if hotels else None
             offers = (top or {}).get("offers") or []
-            # Sort by total price, take top 8.
+
             def _ama_price(o):
                 try:
                     return float(o.get("totalPrice") or o.get("basePrice") or 9e9)
@@ -1161,6 +1219,38 @@ def mapping_compare_prices():
                     return 9e9
             offers_sorted = sorted(offers, key=_ama_price)[:8]
             cheapest = offers_sorted[0] if offers_sorted else {}
+
+            buckets = get_hotel_images_categorized(amadeus_id)
+
+            def pick_images_for_offer(offer, position, gallery_size=6):
+                """Choose a thumbnail + gallery (image array) for the given offer."""
+                desc = " ".join(
+                    str(offer.get(k) or "") for k in ("description", "rateName", "roomName", "roomType")
+                ).lower()
+                preferred_buckets = []
+                if "suite" in desc and buckets["suite"]:
+                    preferred_buckets.append("suite")
+                if "bath" in desc and buckets["bath"]:
+                    preferred_buckets.append("bath")
+                preferred_buckets.extend(["room", "suite", "bath", "other"])
+                gallery: list[str] = []
+                seen: set[str] = set()
+                start = position
+                for bucket in preferred_buckets:
+                    pool = buckets.get(bucket) or []
+                    if not pool:
+                        continue
+                    for j in range(len(pool)):
+                        url = pool[(start + j) % len(pool)]
+                        if url and url not in seen:
+                            seen.add(url)
+                            gallery.append(url)
+                            if len(gallery) >= gallery_size:
+                                break
+                    if len(gallery) >= gallery_size:
+                        break
+                return gallery
+
             result["amadeus"] = {
                 "status": status,
                 "hotelId": amadeus_id,
@@ -1180,8 +1270,9 @@ def mapping_compare_prices():
                         "currency": o.get("currency"),
                         "refundable": o.get("refundable") or "",
                         "cancelDeadline": o.get("cancelDeadline") or "",
+                        "images": pick_images_for_offer(o, i),
                     }
-                    for o in offers_sorted
+                    for i, o in enumerate(offers_sorted)
                 ],
             }
         except Exception as exc:

@@ -118,6 +118,25 @@
   .cmp-room-price { font-weight: 800; color: var(--ink); font-size: 0.98rem; }
   .cmp-room-tax { color: var(--muted); font-size: 0.74rem; }
   .cmp-room-bestprice { color: var(--green); font-weight: 800; font-size: 1.05rem; margin-bottom: 4px; }
+  .cmp-room { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: stretch; }
+  .cmp-room-img { width: 84px; height: 84px; border-radius: 6px; object-fit: cover; background: #eef1f6; display: block; }
+  .cmp-room-img.placeholder { background: linear-gradient(135deg, #e6ecf5, #f3f5f9); display: grid; place-items: center; font-size: 0.7rem; color: var(--faint); font-weight: 700; }
+  .cmp-room-img.clickable { cursor: zoom-in; transition: transform 0.15s; }
+  .cmp-room-img.clickable:hover { transform: scale(1.03); }
+  .cmp-room-img-wrap { position: relative; }
+  .cmp-room-img-badge { position: absolute; right: 4px; bottom: 4px; background: rgba(23, 32, 51, 0.75); color: #fff; font-size: 0.66rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; pointer-events: none; }
+
+  .cmp-gallery-shell { padding: 4px 4px 12px; }
+  .cmp-gallery-title { font-weight: 800; font-size: 1.05rem; margin-bottom: 10px; padding-right: 28px; }
+  .cmp-gallery-main { width: 100%; max-height: 65vh; object-fit: contain; background: #0e1726; border-radius: 8px; display: block; }
+  .cmp-gallery-thumbs { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding: 4px 0; }
+  .cmp-gallery-thumb { width: 72px; height: 56px; flex: 0 0 auto; object-fit: cover; border-radius: 4px; opacity: 0.55; cursor: pointer; transition: opacity 0.15s, transform 0.15s; }
+  .cmp-gallery-thumb.active { opacity: 1; outline: 2px solid var(--blue); }
+  .cmp-gallery-thumb:hover { opacity: 1; }
+  .cmp-gallery-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; gap: 8px; color: var(--muted); font-size: 0.84rem; }
+  .cmp-gallery-arrow { background: var(--ink); color: #fff; border: 0; padding: 6px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+  .cmp-gallery-arrow:disabled { opacity: 0.4; cursor: not-allowed; }
+  .cmp-room-body { display: flex; flex-direction: column; gap: 3px; }
   .mode-tagline { color: rgba(255,255,255,0.78); font-size: 0.82rem; margin-left: 14px; align-self: center; }
 
   .search-panel {
@@ -976,6 +995,7 @@ async function comparePrices(idx, tboId, amadeusId, city) {
 }
 
 function renderPriceCard(data) {
+  cmpRoomGalleries.length = 0;
   const ama = data.amadeus || {};
   const tbo = data.tbo || {};
   const amaPrice = ama.cheapestTotal ? Number(ama.cheapestTotal) : null;
@@ -1012,6 +1032,8 @@ function renderPriceCard(data) {
   `;
 }
 
+const cmpRoomGalleries = [];
+
 function renderAmadeusRooms(ama) {
   const offers = ama.offers || [];
   if (!offers.length) return '<div class="unavail">No offers returned</div>';
@@ -1019,24 +1041,90 @@ function renderAmadeusRooms(ama) {
   const cheapest = Number(offers[0].totalPrice || offers[0].basePrice || 0);
   let html = `<div class="cmp-room-bestprice">From ${clean(cur)} ${cheapest.toFixed(2)}</div>`;
   html += '<div class="cmp-room-list">';
-  offers.forEach(o => {
+  offers.forEach((o) => {
     const total = o.totalPrice ? Number(o.totalPrice).toFixed(2) : (o.basePrice ? Number(o.basePrice).toFixed(2) : '—');
     const refundCls = (o.refundable || '').includes('REFUNDABLE') ? 'refund-yes' : 'refund-no';
     const refundLbl = (o.refundable || '').includes('REFUNDABLE') ? 'Refundable' : 'Non-refundable';
+    const imgs = o.images || [];
+    let imgHtml;
+    if (imgs.length) {
+      const galleryId = cmpRoomGalleries.length;
+      cmpRoomGalleries.push({ title: o.description || o.roomType || 'Room', images: imgs });
+      const badge = imgs.length > 1 ? `<span class="cmp-room-img-badge">+${imgs.length - 1}</span>` : '';
+      imgHtml = `<div class="cmp-room-img-wrap" onclick="openCmpGallery(${galleryId}, 0)" title="Click to view ${imgs.length} photos">
+        <img class="cmp-room-img clickable" src="${attr(imgs[0])}" loading="lazy" alt="Room photo"/>
+        ${badge}
+      </div>`;
+    } else {
+      imgHtml = `<div class="cmp-room-img placeholder">no image</div>`;
+    }
     html += `<div class="cmp-room">
-      <div class="cmp-room-name">${clean(o.description || o.roomType || 'Room')}</div>
-      <div class="cmp-room-chips">
-        <span class="cmp-chip">${clean(o.boardType || 'Room only')}</span>
-        ${o.bedType ? `<span class="cmp-chip">${clean(o.bedType)}</span>` : ''}
-        <span class="cmp-chip ${refundCls}">${refundLbl}</span>
+      ${imgHtml}
+      <div class="cmp-room-body">
+        <div class="cmp-room-name">${clean(o.description || o.roomType || 'Room')}</div>
+        <div class="cmp-room-chips">
+          <span class="cmp-chip">${clean(o.boardType || 'Room only')}</span>
+          ${o.bedType ? `<span class="cmp-chip">${clean(o.bedType)}</span>` : ''}
+          <span class="cmp-chip ${refundCls}">${refundLbl}</span>
+        </div>
+        <div class="cmp-room-price">${clean(o.currency || cur)} ${total}</div>
+        ${o.avgPerNight ? `<div class="cmp-room-tax">${clean(o.currency || cur)} ${Number(o.avgPerNight).toFixed(2)} / night</div>` : ''}
       </div>
-      <div class="cmp-room-price">${clean(o.currency || cur)} ${total}</div>
-      ${o.avgPerNight ? `<div class="cmp-room-tax">${clean(o.currency || cur)} ${Number(o.avgPerNight).toFixed(2)} / night</div>` : ''}
     </div>`;
   });
   html += '</div>';
   return html;
 }
+
+let cmpGalleryCurrent = null;
+let cmpGalleryIdx = 0;
+
+function openCmpGallery(galleryId, startIdx) {
+  const gal = cmpRoomGalleries[galleryId];
+  if (!gal || !gal.images.length) return;
+  cmpGalleryCurrent = gal;
+  cmpGalleryIdx = startIdx || 0;
+  renderCmpGallery();
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function renderCmpGallery() {
+  const gal = cmpGalleryCurrent;
+  if (!gal) return;
+  const total = gal.images.length;
+  const idx = cmpGalleryIdx;
+  const thumbs = gal.images.map((url, i) =>
+    `<img class="cmp-gallery-thumb ${i === idx ? 'active' : ''}" src="${attr(url)}" loading="lazy" onclick="cmpGalleryGoto(${i})" alt="Photo ${i + 1}"/>`
+  ).join('');
+  document.getElementById('modalContent').innerHTML = `
+    <div class="cmp-gallery-shell">
+      <div class="cmp-gallery-title">${clean(gal.title)}</div>
+      <img class="cmp-gallery-main" src="${attr(gal.images[idx])}" alt="Photo ${idx + 1}"/>
+      <div class="cmp-gallery-nav">
+        <button class="cmp-gallery-arrow" onclick="cmpGalleryGoto(${idx - 1})" ${idx <= 0 ? 'disabled' : ''}>← Prev</button>
+        <span>Photo ${idx + 1} of ${total}</span>
+        <button class="cmp-gallery-arrow" onclick="cmpGalleryGoto(${idx + 1})" ${idx >= total - 1 ? 'disabled' : ''}>Next →</button>
+      </div>
+      <div class="cmp-gallery-thumbs">${thumbs}</div>
+    </div>
+  `;
+}
+
+function cmpGalleryGoto(i) {
+  if (!cmpGalleryCurrent) return;
+  const n = cmpGalleryCurrent.images.length;
+  if (i < 0 || i >= n) return;
+  cmpGalleryIdx = i;
+  renderCmpGallery();
+}
+
+document.addEventListener('keydown', e => {
+  const open = document.getElementById('modalBackdrop')?.classList.contains('open');
+  if (!open || !cmpGalleryCurrent) return;
+  if (e.key === 'ArrowLeft') cmpGalleryGoto(cmpGalleryIdx - 1);
+  if (e.key === 'ArrowRight') cmpGalleryGoto(cmpGalleryIdx + 1);
+  if (e.key === 'Escape') { document.getElementById('modalBackdrop').classList.remove('open'); cmpGalleryCurrent = null; }
+});
 
 function renderTboRooms(tbo) {
   const rooms = tbo.rooms || [];
