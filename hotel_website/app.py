@@ -1113,6 +1113,19 @@ def mapping_hotels():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/api/mapping/search-hotels")
+def mapping_search_hotels():
+    """Global hotel search across all matched pairs (used by autocomplete)."""
+    from db.mapping_queries import search_hotels
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"hotels": []})
+    try:
+        return jsonify({"hotels": search_hotels(q, limit=25)})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.route("/api/mapping/compare-prices")
 def mapping_compare_prices():
     """Fetch live prices from both providers for a matched hotel pair."""

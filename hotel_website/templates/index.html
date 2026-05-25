@@ -193,6 +193,9 @@
   .ac-item-sub { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
   .ac-item-code { font-weight: 800; color: var(--navy); font-size: 0.85rem; }
   .ac-empty { padding: 12px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+  .ac-section { padding: 8px 12px 4px; color: var(--faint); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+  .ac-main { font-weight: 700; font-size: 0.92rem; }
+  .ac-meta { color: var(--muted); font-size: 0.78rem; text-align: right; }
 
   .btn-search, .btn-detail {
     border: 0;
@@ -650,11 +653,12 @@
       <div class="hint">Pick a mapped city, see TBO ↔ Amadeus hotel matches, then compare live prices side by side.</div>
     </div>
     <div class="form-row-tbo">
-      <div class="field">
-        <label for="cmpCity">City (mapped)</label>
-        <select id="cmpCity" onchange="onCmpCityChange()">
-          <option value="">Loading mapped cities…</option>
-        </select>
+      <div class="field" style="position:relative;">
+        <label for="cmpCityInput">City or hotel</label>
+        <input id="cmpCityInput" type="text" placeholder="Type city (Dubai) or hotel (Hilton)…" autocomplete="off"
+               oninput="onCmpCityInput()" onfocus="onCmpCityInput()" onkeydown="onCmpAcKey(event)"/>
+        <input type="hidden" id="cmpCity" value=""/>
+        <div class="ac-menu" id="cmpAcMenu"></div>
       </div>
       <div class="field">
         <label for="cmpCheckin">Check-in</label>
@@ -685,7 +689,12 @@
       </div>
       <button class="btn-search" id="cmpLoadBtn" onclick="loadCmpHotels()" disabled>Load matched hotels</button>
     </div>
-    <div id="cmpHotelsArea" style="margin-top: 16px;"></div>
+    <div id="cmpFilterArea" style="margin-top: 16px; display:none;">
+      <input id="cmpHotelFilter" type="text" placeholder="Filter loaded hotels (Hilton, Sofitel, …)" autocomplete="off"
+             oninput="onCmpHotelFilter()"
+             style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:0.9rem;"/>
+    </div>
+    <div id="cmpHotelsArea" style="margin-top: 12px;"></div>
   </section>
 
   <section class="results-wrap" id="resultsWrap"></section>
@@ -753,7 +762,7 @@ function setMode(next) {
   if (next === 'tbo' && !document.getElementById('tboCountry').dataset.loaded) {
     loadTboCountries();
   }
-  if (next === 'cmp' && !document.getElementById('cmpCity').dataset.loaded) {
+  if (next === 'cmp' && !cmpCitiesLoaded) {
     loadCmpCities();
   }
 }
@@ -762,44 +771,158 @@ function setMode(next) {
    Compare Providers mode
 ==================================================================== */
 
+let cmpAllCities = [];
+let cmpCitiesLoaded = false;
+let cmpAcItems = [];
+let cmpAcActiveIdx = -1;
+let cmpAcTimer = null;
+let cmpHotelsCache = [];
+
 async function loadCmpCities() {
-  const sel = document.getElementById('cmpCity');
   try {
     const res = await fetch('/api/mapping/cities');
     const data = await res.json();
-    const cities = data.cities || [];
-    if (!cities.length) {
-      sel.innerHTML = '<option value="">No mapped cities yet — run match_hotels first</option>';
-      return;
+    cmpAllCities = data.cities || [];
+    cmpCitiesLoaded = true;
+    if (!cmpAllCities.length) {
+      document.getElementById('cmpHotelsArea').innerHTML =
+        '<div style="padding:16px;color:var(--muted);">No mapped cities yet — run match_hotels first</div>';
     }
-    sel.innerHTML = '<option value="">— pick a city —</option>' + cities.map(c =>
-      `<option value="${attr(c.iata_city_code)}">${clean(c.iata_city_code)} · ${clean(c.city_name || '?')} · ${c.match_count} matches</option>`
-    ).join('');
-    sel.dataset.loaded = '1';
   } catch (err) {
-    sel.innerHTML = `<option value="">Load failed: ${clean(err.message)}</option>`;
+    document.getElementById('cmpHotelsArea').innerHTML =
+      `<div style="padding:16px;color:var(--red);">Load failed: ${clean(err.message)}</div>`;
   }
 }
 
-function onCmpCityChange() {
-  const v = document.getElementById('cmpCity').value;
-  document.getElementById('cmpLoadBtn').disabled = !v;
-  document.getElementById('cmpHotelsArea').innerHTML = '';
+function onCmpCityInput() {
+  const value = document.getElementById('cmpCityInput').value.trim().toLowerCase();
+  if (cmpAcTimer) clearTimeout(cmpAcTimer);
+  cmpAcTimer = setTimeout(() => fetchCmpSuggestions(value), 180);
+}
+
+async function fetchCmpSuggestions(value) {
+  // 1. City matches (client-side from already loaded cmpAllCities)
+  const cityMatches = !value ? cmpAllCities.slice(0, 8) : cmpAllCities.filter(c => {
+    const hay = `${c.iata_city_code} ${c.city_name || ''} ${c.country_code || ''}`.toLowerCase();
+    return hay.includes(value);
+  }).slice(0, 6);
+
+  // 2. Hotel matches (server-side fuzzy search — only if user typed >= 2 chars)
+  let hotelMatches = [];
+  if (value.length >= 2) {
+    try {
+      const res = await fetch(`/api/mapping/search-hotels?q=${encodeURIComponent(value)}`);
+      const data = await res.json();
+      hotelMatches = (data.hotels || []).slice(0, 8);
+    } catch (e) { /* ignore */ }
+  }
+
+  renderCmpSuggestions(cityMatches, hotelMatches);
+}
+
+function renderCmpSuggestions(cities, hotels) {
+  const menu = document.getElementById('cmpAcMenu');
+  cmpAcItems = [];
+  cmpAcActiveIdx = -1;
+  let html = '';
+  if (cities.length) {
+    html += '<div class="ac-section">Cities</div>';
+    cities.forEach(c => {
+      const idx = cmpAcItems.length;
+      cmpAcItems.push({ type: 'city', city: c.iata_city_code, label: `${c.city_name || ''} (${c.iata_city_code})` });
+      html += `<div class="ac-item" data-idx="${idx}" onmousedown="cmpAcPick(${idx})">
+        <span class="ac-main">${clean(c.city_name || '?')} <small style="color:var(--muted);">${clean(c.iata_city_code)}</small></span>
+        <span class="ac-meta">${c.match_count} matched hotels</span>
+      </div>`;
+    });
+  }
+  if (hotels.length) {
+    html += '<div class="ac-section">Hotels</div>';
+    hotels.forEach(h => {
+      const idx = cmpAcItems.length;
+      cmpAcItems.push({
+        type: 'hotel', city: h.iata_city_code, hotelTbo: h.tbo_hotel_code, hotelAma: h.amadeus_hotel_id,
+        label: h.tbo_hotel_name,
+      });
+      html += `<div class="ac-item" data-idx="${idx}" onmousedown="cmpAcPick(${idx})">
+        <span class="ac-main">${clean(h.tbo_hotel_name)}</span>
+        <span class="ac-meta">${clean(h.iata_city_code)}</span>
+      </div>`;
+    });
+  }
+  if (!html) {
+    html = '<div class="ac-empty">No matches</div>';
+  }
+  menu.innerHTML = html;
+  menu.classList.add('open');
+}
+
+function cmpAcPick(idx) {
+  const item = cmpAcItems[idx];
+  if (!item) return;
+  document.getElementById('cmpAcMenu').classList.remove('open');
+  document.getElementById('cmpCityInput').value = item.label;
+  document.getElementById('cmpCity').value = item.city;
+  document.getElementById('cmpLoadBtn').disabled = false;
+  // City pick → clear filter; Hotel pick → pre-set filter so it persists across loads.
+  document.getElementById('cmpHotelFilter').value = item.type === 'hotel' ? item.label : '';
+  loadCmpHotels();
+}
+
+function onCmpAcKey(e) {
+  const menu = document.getElementById('cmpAcMenu');
+  if (!menu.classList.contains('open')) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    cmpAcActiveIdx = Math.max(0, Math.min(cmpAcItems.length - 1,
+      cmpAcActiveIdx + (e.key === 'ArrowDown' ? 1 : -1)));
+    [...menu.querySelectorAll('.ac-item')].forEach((el, i) =>
+      el.classList.toggle('is-active', i === cmpAcActiveIdx));
+  } else if (e.key === 'Enter' && cmpAcActiveIdx >= 0) {
+    e.preventDefault();
+    cmpAcPick(cmpAcActiveIdx);
+  } else if (e.key === 'Escape') {
+    menu.classList.remove('open');
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#cmpCityInput') && !e.target.closest('#cmpAcMenu')) {
+    document.getElementById('cmpAcMenu')?.classList.remove('open');
+  }
+});
+
+function onCmpHotelFilter() {
+  const q = document.getElementById('cmpHotelFilter').value.trim().toLowerCase();
+  document.querySelectorAll('#cmpHotelsArea tr[id^="cmpRow"]').forEach((row, idx) => {
+    const hotel = cmpHotelsCache[idx];
+    if (!hotel) return;
+    const hay = `${hotel.tbo_hotel_name} ${hotel.amadeus_hotel_name}`.toLowerCase();
+    const visible = !q || hay.includes(q);
+    row.style.display = visible ? '' : 'none';
+    const priceRow = document.getElementById(`cmpPriceRow${idx}`);
+    if (priceRow) priceRow.style.display = visible ? '' : 'none';
+  });
 }
 
 async function loadCmpHotels() {
   const city = document.getElementById('cmpCity').value;
   if (!city) return;
   const area = document.getElementById('cmpHotelsArea');
+  const filterArea = document.getElementById('cmpFilterArea');
+  const preservedFilter = document.getElementById('cmpHotelFilter').value;
   area.innerHTML = '<div style="padding:16px;color:var(--muted);">Loading mapped hotels…</div>';
+  filterArea.style.display = 'none';
   try {
     const res = await fetch(`/api/mapping/hotels?city=${encodeURIComponent(city)}`);
     const data = await res.json();
     const hotels = data.hotels || [];
+    cmpHotelsCache = hotels;
     if (!hotels.length) {
       area.innerHTML = '<div style="padding:16px;color:var(--muted);">No matches for this city.</div>';
       return;
     }
+    filterArea.style.display = '';
     let html = `<div style="font-weight:700;margin-bottom:6px;">${hotels.length} matched hotels in ${clean(city)}</div>`;
     html += '<table class="cmp-table">';
     html += '<thead><tr><th>Score</th><th>TBO hotel</th><th>Amadeus hotel</th><th>Dist (m)</th><th>Compare prices</th></tr></thead><tbody>';
@@ -816,6 +939,10 @@ async function loadCmpHotels() {
     });
     html += '</tbody></table>';
     area.innerHTML = html;
+    if (preservedFilter) {
+      document.getElementById('cmpHotelFilter').value = preservedFilter;
+      onCmpHotelFilter();
+    }
   } catch (err) {
     area.innerHTML = `<div style="padding:16px;color:var(--red);">Load failed: ${clean(err.message)}</div>`;
   }

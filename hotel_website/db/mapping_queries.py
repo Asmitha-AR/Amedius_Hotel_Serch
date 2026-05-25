@@ -19,6 +19,32 @@ def list_mapped_cities() -> list[dict]:
         return [dict(r) for r in cur.fetchall()]
 
 
+def search_hotels(query: str, limit: int = 25) -> list[dict]:
+    """Fuzzy search across all matched hotels (TBO or Amadeus name contains query)."""
+    q = (query or "").strip()
+    if not q:
+        return []
+    pattern = f"%{q}%"
+    sql = """
+        SELECT tbo_hotel_code, amadeus_hotel_id, tbo_hotel_name, amadeus_hotel_name,
+               iata_city_code, name_score, distance_meters, combined_score
+        FROM hotel_id_mapping
+        WHERE tbo_hotel_name ILIKE %s OR amadeus_hotel_name ILIKE %s
+        ORDER BY combined_score DESC
+        LIMIT %s
+    """
+    with get_cursor(dict_rows=True) as cur:
+        cur.execute(sql, (pattern, pattern, limit))
+        out = []
+        for r in cur.fetchall():
+            row = dict(r)
+            for key in ("name_score", "distance_meters", "combined_score"):
+                if row.get(key) is not None:
+                    row[key] = float(row[key])
+            out.append(row)
+        return out
+
+
 def list_mapped_hotels(iata_city_code: str) -> list[dict]:
     """All matched hotel pairs for the given IATA city, sorted by combined_score."""
     sql = """
